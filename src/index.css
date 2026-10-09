@@ -76,3 +76,94 @@ dd { margin: 0; text-align: right; }
 
 .created { max-width: 520px; margin: 40px auto; text-align: center; }
 .created .btn { margin-top: 16px; }
+
+/* ---------- Paso 2: estructura principal ---------- */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 240px; flex-shrink: 0; background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 20px 12px; position: sticky; top: 0; height: 100vh;
+}
+.brand { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.08em; padding: 0 12px 20px; color: var(--accent); }
+.nav { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: none; color: var(--muted); font-size: 0.95rem;
+  padding: 10px 12px; border-radius: 8px; cursor: pointer; text-align: left;
+}
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { background: var(--accent); color: #fff; }
+.sidebar-footer { padding-top: 12px; border-top: 1px solid var(--border); }
+.overlay { display: none; }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  padding: 10px 20px; background: var(--panel);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5;
+}
+.menu-btn {
+  display: none; background: none; border: 1px solid var(--border); color: var(--text);
+  font-size: 1.2rem; border-radius: 8px; padding: 4px 10px; cursor: pointer;
+}
+.topbar-club { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-right: auto; min-width: 0; }
+.topbar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat { display: flex; flex-direction: column; align-items: flex-end; }
+.stat span { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat strong { font-size: 0.95rem; }
+
+.content { padding: 24px 20px 48px; max-width: 1100px; width: 100%; margin: 0 auto; }
+
+.dash { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+.stop-card { grid-column: 1 / -1; }
+.inbox-card { grid-column: 1 / -1; }
+
+.stepper { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+.step { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.step-dot {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--border); font-size: 0.8rem; font-weight: 700;
+}
+.step.current { color: var(--text); }
+.step.current .step-dot { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step.done .step-dot { border-color: var(--accent); color: var(--accent); }
+.stop-title { margin: 0 0 4px; font-size: 1.4rem; }
+.stop-when { margin: 0 0 12px; color: var(--muted); }
+.btn.inline { width: auto; margin-top: 8px; }
+
+.table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.table th { text-align: left; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; padding: 6px 8px; }
+.table td { padding: 8px; border-top: 1px solid var(--border); }
+.table th:nth-child(n+3), .table td:nth-child(n+3) { text-align: right; }
+.table tr.me td { background: rgba(59, 130, 246, 0.15); font-weight: 600; }
+
+.link-btn {
+  background: none; border: none; color: var(--accent); cursor: pointer;
+  padding: 4px 0; font-size: 0.9rem;
+}
+.link-btn:hover { color: var(--accent-hover); }
+
+.objective { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+.bar { height: 8px; background: var(--bg); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.bar span { display: block; height: 100%; background: var(--accent); }
+
+.inbox { list-style: none; margin: 0; padding: 0; }
+.inbox li { padding: 12px 0; border-top: 1px solid var(--border); }
+.inbox li:first-child { border-top: none; padding-top: 0; }
+.inbox-head { display: flex; align-items: center; gap: 8px; }
+.inbox li.unread strong { color: var(--accent-hover); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+@media (max-width: 800px) {
+  .sidebar {
+    position: fixed; left: 0; top: 0; z-index: 20; height: 100%;
+    transform: translateX(-100%); transition: transform 0.2s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .overlay { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 15; }
+  .menu-btn { display: inline-flex; }
+  .topbar { gap: 14px; }
+  .dash { grid-template-columns: 1fr; }
+}
