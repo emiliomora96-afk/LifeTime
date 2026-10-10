@@ -1,5 +1,6 @@
 export type SectionId =
   | 'inicio'
+  | 'parada'
   | 'equipo'
   | 'tabla'
   | 'calendario'
@@ -11,6 +12,7 @@ export type SectionId =
 
 export const SECTIONS: { id: SectionId; label: string; icon: string }[] = [
   { id: 'inicio', label: 'Inicio', icon: '🏠' },
+  { id: 'parada', label: 'Parada actual', icon: '🚩' },
   { id: 'equipo', label: 'Equipo', icon: '👕' },
   { id: 'tabla', label: 'Clasificación', icon: '📊' },
   { id: 'calendario', label: 'Calendario', icon: '📅' },

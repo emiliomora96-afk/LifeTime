@@ -167,3 +167,132 @@ dd { margin: 0; text-align: right; }
   .topbar { gap: 14px; }
   .dash { grid-template-columns: 1fr; }
 }
+
+/* ---------- Paso 3: secciones ---------- */
+.page { display: flex; flex-direction: column; gap: 20px; }
+.page-head .subtitle { margin-bottom: 0; }
+.center { text-align: center; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.kpi span { display: block; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.kpi strong { font-size: 1.25rem; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab {
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.9rem;
+}
+.tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.table-scroll { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; min-width: 420px; }
+.data-table th { text-align: left; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; padding: 6px 8px; white-space: nowrap; }
+.data-table td { padding: 8px; border-top: 1px solid var(--border); white-space: nowrap; }
+.data-table .num { text-align: right; }
+.data-table th.center, .data-table td.center { text-align: center; }
+.data-table td.mine { font-weight: 700; color: var(--accent-hover); }
+.data-table tr.me td { background: rgba(59, 130, 246, 0.15); font-weight: 600; }
+
+.pos { font-size: 0.72rem; font-weight: 700; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; color: var(--muted); }
+.stars { color: #fbbf24; letter-spacing: 2px; }
+
+.mini-btn {
+  background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 6px 10px; font-size: 0.8rem; cursor: pointer;
+}
+.mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.row-btns { display: flex; gap: 8px; }
+
+.plain-list { list-style: none; margin: 0; padding: 0; }
+.plain-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.plain-list li:first-child { border-top: none; padding-top: 0; }
+.plain-list.goals li { flex-direction: column; align-items: stretch; gap: 6px; }
+.goal-text { display: flex; justify-content: space-between; gap: 12px; }
+
+/* Clasificación */
+.zone-europe td:first-child { box-shadow: inset 3px 0 0 #3b82f6; }
+.zone-up td:first-child { box-shadow: inset 3px 0 0 #22c55e; }
+.zone-playoff td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
+.zone-down td:first-child { box-shadow: inset 3px 0 0 #ef4444; }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; font-size: 0.85rem; color: var(--muted); }
+.lg { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.lg.europe { background: #3b82f6; }
+.lg.up { background: #22c55e; }
+.lg.playoff { background: #f59e0b; }
+.lg.down { background: #ef4444; }
+
+/* Resultados */
+.result { display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 700; text-align: center; }
+.tag-g { background: #166534; color: #bbf7d0; }
+.tag-e { background: #3f4a63; color: #dbe3f5; }
+.tag-p { background: #7f1d1d; color: #fecaca; }
+
+/* Campo */
+.pitch {
+  position: relative; width: 100%; max-width: 520px; aspect-ratio: 4 / 5; margin: 0 auto;
+  border-radius: 12px; overflow: hidden; border: 2px solid #1f7a45;
+  background: repeating-linear-gradient(180deg, #14532d 0 12.5%, #166534 12.5% 25%);
+}
+.pitch::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px solid rgba(255, 255, 255, 0.35); }
+.pitch::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); border: 2px solid rgba(255, 255, 255, 0.35); border-radius: 50%;
+}
+.pitch-box { position: absolute; left: 25%; right: 25%; height: 14%; border: 2px solid rgba(255, 255, 255, 0.35); }
+.pitch-box.top { top: 0; border-top: none; }
+.pitch-box.bottom { bottom: 0; border-bottom: none; }
+
+.token { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; width: 72px; z-index: 1; }
+.token-badge { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.95rem; border: 2px solid; }
+.token-name { font-size: 0.68rem; color: #fff; text-shadow: 0 1px 2px #000; text-align: center; line-height: 1.1; }
+.cond { height: 4px; width: 34px; background: rgba(0, 0, 0, 0.45); border-radius: 99px; overflow: hidden; }
+.cond.wide { width: 90px; height: 6px; background: var(--bg); }
+.cond span { display: block; height: 100%; }
+
+/* Rankings */
+.rank { list-style: none; margin: 0; padding: 0; }
+.rank li { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-top: 1px solid var(--border); }
+.rank li:first-child { border-top: none; }
+.rank li.me { background: rgba(59, 130, 246, 0.15); border-radius: 8px; }
+.rank-pos { width: 22px; color: var(--muted); font-weight: 700; }
+.rank-info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.hint.center { text-align: center; }
+
+/* ---------- Paso 4 (rehecho): avisos, inversiones y ojeadores ---------- */
+select {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; color: var(--text); font-size: 1rem;
+}
+select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+.section-title { margin: 8px 0 -4px; font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.notice-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.notice-head h3 { margin: 0; font-size: 1.05rem; }
+.tag { font-size: 0.7rem; font-weight: 700; border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+.tag.req { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+.tag.opt { background: rgba(143, 160, 194, 0.18); color: var(--muted); }
+
+.invest-list { display: flex; flex-direction: column; gap: 18px; margin-top: 12px; }
+.invest { display: flex; flex-direction: column; gap: 6px; }
+.invest-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.levels { display: flex; gap: 8px; flex-wrap: wrap; }
+.level {
+  background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.85rem;
+}
+.level:hover { border-color: var(--accent); }
+.level.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.scout-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+.scout-form .field { margin-bottom: 0; }
+
+/* ---------- Paso 5 ---------- */
+.table tr.gap td { text-align: center; color: var(--muted); padding: 2px; border-top: none; }
+.pill-up { color: #22c55e; }
+.pill-down { color: #f87171; }

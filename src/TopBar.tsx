@@ -1,14 +1,16 @@
 import type { Club } from './types'
+import type { GameState } from './game'
 import { formatMoney } from './data'
-import { START_PRESTIGE, TOTAL_SEASONS } from './mock'
+import { ROUNDS_PER_SEASON, TOTAL_SEASONS } from './config'
 import Crest from './Crest'
 
 interface Props {
   club: Club
+  game: GameState
   onMenu: () => void
 }
 
-export default function TopBar({ club, onMenu }: Props) {
+export default function TopBar({ club, game, onMenu }: Props) {
   return (
     <header className="topbar">
       <button type="button" className="menu-btn" onClick={onMenu} aria-label="Abrir menú">
@@ -26,7 +28,15 @@ export default function TopBar({ club, onMenu }: Props) {
       </div>
       <div className="stat">
         <span>Temporada</span>
-        <strong>1 / {TOTAL_SEASONS}</strong>
+        <strong>
+          {game.season} / {TOTAL_SEASONS}
+        </strong>
+      </div>
+      <div className="stat">
+        <span>Jornada</span>
+        <strong>
+          {game.round} / {ROUNDS_PER_SEASON}
+        </strong>
       </div>
       <div className="stat">
         <span>Presupuesto</span>
@@ -34,7 +44,7 @@ export default function TopBar({ club, onMenu }: Props) {
       </div>
       <div className="stat">
         <span>Prestigio</span>
-        <strong>{START_PRESTIGE}</strong>
+        <strong>{game.prestige}</strong>
       </div>
     </header>
   )

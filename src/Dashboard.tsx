@@ -1,51 +1,68 @@
-import { useState } from 'react'
+import { Fragment } from 'react'
 import type { Club } from './types'
 import type { SectionId } from './sections'
-import { OBJECTIVE, STANDINGS_SAMPLE, STOPS, buildInbox } from './mock'
+import type { GameState } from './game'
+import { BASE_STOPS, EVENT_STOPS, ROUNDS_PER_SEASON } from './config'
+import { OBJECTIVE, buildInbox } from './mock'
+import { getTable } from './season'
 
 interface Props {
   club: Club
+  game: GameState
   onGoTo: (id: SectionId) => void
 }
 
-export default function Dashboard({ club, onGoTo }: Props) {
-  const [stopIndex, setStopIndex] = useState(0)
-  const stop = STOPS[stopIndex]
+export default function Dashboard({ club, game, onGoTo }: Props) {
+  const baseIndex = BASE_STOPS.findIndex((s) => s.id === game.baseStop)
+  const base = BASE_STOPS[baseIndex] ?? BASE_STOPS[0]
+  const event = game.eventId ? EVENT_STOPS.find((e) => e.id === game.eventId) : undefined
   const inbox = buildInbox(club)
+  const unanswered = game.notices.filter((n) => game.answers[n.id] === undefined)
+  const requiredLeft = unanswered.filter((n) => n.required).length
+
+  const level = game.league.userDivision
+  const table = getTable(game.league, level)
+  const myIndex = table.findIndex((r) => r.name === null)
+  const top = table.slice(0, 6).map((row, i) => ({ row, pos: i + 1 }))
+  const rows = myIndex >= 6 ? [...top, { row: table[myIndex], pos: myIndex + 1 }] : top
 
   return (
     <div className="dash">
       <section className="card stop-card">
-        <h2>Parada actual</h2>
+        <h2>
+          Parada actual · Temporada {game.season} · Jornada {game.round} de {ROUNDS_PER_SEASON}
+        </h2>
         <div className="stepper">
-          {STOPS.map((s, i) => (
+          {BASE_STOPS.map((s, i) => (
             <div
               key={s.id}
-              className={'step' + (i < stopIndex ? ' done' : '') + (i === stopIndex ? ' current' : '')}
+              className={'step' + (i < baseIndex ? ' done' : '') + (i === baseIndex ? ' current' : '')}
             >
               <span className="step-dot">{i + 1}</span>
               <span className="step-label">{s.name}</span>
             </div>
           ))}
         </div>
-        <h3 className="stop-title">{stop.name}</h3>
-        <p className="stop-when">{stop.when}</p>
-        <p>
-          <strong>Qué haces:</strong> {stop.actions}
+        <h3 className="stop-title">{event ? `${event.icon} ${event.name}` : base.name}</h3>
+        <p className="stop-when">{event ? event.intro : base.when}</p>
+        {!event && (
+          <p>
+            <strong>Qué haces:</strong> {base.actions}
+          </p>
+        )}
+        <p className="hint">
+          {unanswered.length === 0
+            ? 'No tienes avisos pendientes.'
+            : `Avisos pendientes: ${unanswered.length}` +
+              (requiredLeft > 0 ? ` (${requiredLeft} requieren decisión)` : '')}
         </p>
-        <p className="hint">Duración objetivo: {stop.duration}</p>
-        {/* Demo visual: en el Paso 4 este botón avanza la temporada de verdad */}
-        <button
-          type="button"
-          className="btn inline"
-          onClick={() => setStopIndex((i) => (i + 1) % STOPS.length)}
-        >
-          Continuar →
+        <button type="button" className="btn inline" onClick={() => onGoTo('parada')}>
+          Ir a la parada →
         </button>
       </section>
 
       <section className="card">
-        <h2>Clasificación · 2.ª división</h2>
+        <h2>Clasificación · {level}.ª división</h2>
         <table className="table">
           <thead>
             <tr>
@@ -56,20 +73,27 @@ export default function Dashboard({ club, onGoTo }: Props) {
             </tr>
           </thead>
           <tbody>
-            {STANDINGS_SAMPLE.map((row, i) => (
-              <tr key={i} className={row.name === null ? 'me' : ''}>
-                <td>{i + 1}</td>
-                <td>{row.name ?? club.name}</td>
-                <td>{row.played}</td>
-                <td>{row.points}</td>
-              </tr>
+            {rows.map(({ row, pos }, i) => (
+              <Fragment key={pos}>
+                {i === 6 && (
+                  <tr className="gap">
+                    <td colSpan={4}>…</td>
+                  </tr>
+                )}
+                <tr className={row.name === null ? 'me' : ''}>
+                  <td>{pos}</td>
+                  <td>{row.name ?? club.name}</td>
+                  <td>{row.played}</td>
+                  <td>{row.points}</td>
+                </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
         <button type="button" className="link-btn" onClick={() => onGoTo('tabla')}>
           Ver clasificación completa →
         </button>
-        <p className="hint">Datos de ejemplo.</p>
+        {game.round === 0 && <p className="hint">Aún no se ha jugado: orden por nivel de los equipos.</p>}
       </section>
 
       <section className="card">
