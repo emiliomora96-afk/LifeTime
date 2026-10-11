@@ -17,6 +17,7 @@ import type { InvestArea, Notice, NoticeOption } from './config'
 import { SAVE_KEY } from './data'
 import { GAME_KEY, advance, initialGame, loadGame, saveGame } from './game'
 import type { GameState, ScoutOrder } from './game'
+import { addUserPlayer, removeUserPlayer, setUserAutoLineup, swapUserStarters } from './engine'
 import type { Tactic } from './engine'
 import { seasonExpenses, seasonIncome, total } from './finance'
 
@@ -83,10 +84,17 @@ export default function App() {
     const cost = option.budget ?? 0
     if (cost < 0 && club.budget + cost < 0) return
     if (cost !== 0) updateBudget(club, cost)
+
+    let league = game.league
+    if (option.addPlayer) league = addUserPlayer(league, option.addPlayer)
+    if (option.removePlayerId) league = removeUserPlayer(league, option.removePlayerId)
+    const leaving = option.leaveAtEndId ? [...game.leaving, option.leaveAtEndId] : game.leaving
+
     setGame({
       ...game,
+      league,
+      leaving,
       answers: { ...game.answers, [notice.id]: option.id },
-      salaryExtra: game.salaryExtra + (option.salary ?? 0),
     })
   }
 
@@ -102,6 +110,14 @@ export default function App() {
 
   function handleTactic(tactic: Tactic) {
     setGame({ ...game, tactic })
+  }
+
+  function handleSwap(idA: string, idB: string) {
+    setGame({ ...game, league: swapUserStarters(game.league, idA, idB) })
+  }
+
+  function handleAutoLineup() {
+    setGame({ ...game, league: setUserAutoLineup(game.league) })
   }
 
   function handleContinue() {
@@ -133,7 +149,7 @@ export default function App() {
           />
         )
       case 'equipo':
-        return <Team club={c} />
+        return <Team club={c} league={game.league} onSwap={handleSwap} onAutoLineup={handleAutoLineup} />
       case 'tabla':
         return <Standings club={c} league={game.league} />
       case 'calendario':

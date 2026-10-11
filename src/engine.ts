@@ -1,7 +1,7 @@
 import { clamp, createRng, mixSeed, normal, pickWeighted, poisson, round1, shuffle } from './rng'
 import type { Rng } from './rng'
-import { placeholderSquad, squadStrength, userSquad } from './squads'
-import type { SimPlayer } from './squads'
+import { pickStarters, placeholderSquad, progressSquad, repairStarters, squadStrength, userSquad } from './squads'
+import type { SimPlayer } from './players'
 import { DIV1_NAMES, DIV2_NAMES } from './sample'
 
 export type Level = 1 | 2
@@ -32,10 +32,12 @@ const ASSIST_WEIGHT = { POR: 0.02, DEF: 0.35, MED: 1, DEL: 0.7 }
 export interface SimTeam {
   id: number
   name: string // vacío en el club del jugador
-  strength: number
+  level: number // nivel al que apunta el club (la plantilla puede variar alrededor)
+  strength: number // promedio de valoración del once inicial
   form: number // de -1 a 1, según los últimos resultados
   tactic: Tactic
   squad: SimPlayer[]
+  autoLineup?: boolean // false: el jugador eligió su once (solo el club del jugador). Sin definir = automático
 }
 
 export interface GoalEvent {
@@ -74,6 +76,7 @@ export interface DivisionState {
 }
 
 export interface LeagueState {
+  year: number // temporadas cerradas
   userDivision: Level
   divisions: Record<Level, DivisionState>
 }
@@ -244,14 +247,16 @@ export function computeTable(div: DivisionState): StandRow[] {
 }
 
 /* ---------- Liga ---------- */
-function makeTeam(id: number, name: string, strength: number, rng: Rng): SimTeam {
-  const s = round1(strength)
-  return { id, name, strength: s, form: 0, tactic: 'equilibrada', squad: placeholderSquad(id, s, rng) }
+function makeTeam(id: number, name: string, level: number, rng: Rng): SimTeam {
+  const lv = round1(level)
+  const squad = placeholderSquad(id, lv, rng)
+  return { id, name, level: lv, strength: squadStrength(squad), form: 0, tactic: 'equilibrada', squad }
 }
 
-function makeUserTeam(): SimTeam {
-  const squad = userSquad()
-  return { id: USER_ID, name: '', strength: squadStrength(squad), form: 0, tactic: 'equilibrada', squad }
+function makeUserTeam(rng: Rng): SimTeam {
+  const squad = userSquad(rng)
+  const strength = squadStrength(squad)
+  return { id: USER_ID, name: '', level: strength, strength, form: 0, tactic: 'equilibrada', squad }
 }
 
 function buildDivision(level: Level, teams: SimTeam[], rng: Rng): DivisionState {
@@ -266,11 +271,12 @@ export function createLeague(seed: number): LeagueState {
 
   let nextId = DIV1_NAMES.length + 1
   const second: SimTeam[] = DIV2_NAMES.map((name, i) => {
-    if (name === null) return makeUserTeam()
+    if (name === null) return makeUserTeam(rng)
     return makeTeam(nextId++, name, 72.5 - i * 0.55 + normal(rng), rng)
   })
 
   return {
+    year: 0,
     userDivision: 2,
     divisions: { 1: buildDivision(1, first, rng), 2: buildDivision(2, second, rng) },
   }
@@ -281,6 +287,60 @@ export function setUserTactic(league: LeagueState, tactic: Tactic): LeagueState 
   const div = league.divisions[level]
   const teams = div.teams.map((t) => (t.id === USER_ID ? { ...t, tactic } : t))
   return { ...league, divisions: { ...league.divisions, [level]: { ...div, teams } } }
+}
+
+// Cambia la plantilla del club del jugador y recalcula su nivel (afecta a los partidos que faltan)
+function updateUserTeam(league: LeagueState, change: (team: SimTeam) => SimTeam): LeagueState {
+  const level = league.userDivision
+  const div = league.divisions[level]
+  const teams = div.teams.map((t) => (t.id === USER_ID ? change(t) : t))
+  return { ...league, divisions: { ...league.divisions, [level]: { ...div, teams } } }
+}
+
+// Cambia la plantilla. Si el jugador eligió su once, se respeta; si no, el entrenador elige el mejor.
+function updateUserSquad(league: LeagueState, change: (squad: SimPlayer[]) => SimPlayer[]): LeagueState {
+  return updateUserTeam(league, (t) => {
+    const changed = change(t.squad)
+    const squad = t.autoLineup === false ? repairStarters(changed) : pickStarters(changed)
+    return { ...t, squad, strength: squadStrength(squad) }
+  })
+}
+
+export function getUserTeam(league: LeagueState): SimTeam | undefined {
+  return league.divisions[league.userDivision].teams.find((t) => t.id === USER_ID)
+}
+
+// Intercambia un titular y un suplente de la misma posición. Desde entonces el once es manual.
+export function swapUserStarters(league: LeagueState, idA: string, idB: string): LeagueState {
+  const squad = getUserSquad(league)
+  const a = squad.find((p) => p.id === idA)
+  const b = squad.find((p) => p.id === idB)
+  if (!a || !b || a.pos !== b.pos || a.starter === b.starter) return league
+  return updateUserTeam(league, (t) => {
+    const next = t.squad.map((p) => (p.id === idA || p.id === idB ? { ...p, starter: !p.starter } : p))
+    return { ...t, autoLineup: false, squad: next, strength: squadStrength(next) }
+  })
+}
+
+// Vuelve a dejar que el entrenador elija el mejor once
+export function setUserAutoLineup(league: LeagueState): LeagueState {
+  return updateUserTeam(league, (t) => {
+    const next = pickStarters(t.squad)
+    return { ...t, autoLineup: true, squad: next, strength: squadStrength(next) }
+  })
+}
+
+export function addUserPlayer(league: LeagueState, player: SimPlayer): LeagueState {
+  return updateUserSquad(league, (squad) => [...squad, { ...player, starter: false }])
+}
+
+export function removeUserPlayer(league: LeagueState, playerId: string): LeagueState {
+  return updateUserSquad(league, (squad) => squad.filter((p) => p.id !== playerId))
+}
+
+export function getUserSquad(league: LeagueState): SimPlayer[] {
+  const team = league.divisions[league.userDivision].teams.find((t) => t.id === USER_ID)
+  return team ? team.squad : []
 }
 
 export function simulateLeague(league: LeagueState, toRound: number, seed: number): LeagueState {
@@ -321,16 +381,48 @@ export function userSeasonResult(league: LeagueState): SeasonOutcome {
 
 const LEVEL_MEAN: Record<Level, number> = { 1: 76, 2: 67 }
 
-function evolveTeam(team: SimTeam, level: Level, rng: Rng): SimTeam {
-  if (team.id === USER_ID) return { ...team, form: 0 }
-  const drift = (LEVEL_MEAN[level] - team.strength) * 0.08 + normal(rng)
-  const strength = round1(clamp(team.strength + drift, 55, 88))
-  return { ...team, strength, form: 0, tactic: 'equilibrada', squad: placeholderSquad(team.id, strength, rng) }
+export interface SeasonOptions {
+  academyBonus: number // mejora de los juveniles del club del jugador
+  leaving: string[] // jugadores del club del jugador que se van al terminar la temporada
 }
 
-// Cierra la temporada: ascensos, descensos y arranque de la siguiente
-export function finishSeason(league: LeagueState, seed: number): LeagueState {
+// Un año más para todos los jugadores del club
+function evolveTeam(team: SimTeam, level: Level, year: number, rng: Rng, o: SeasonOptions): SimTeam {
+  const isUser = team.id === USER_ID
+  const teamLevel = isUser
+    ? team.strength
+    : round1(clamp(team.level + (LEVEL_MEAN[level] - team.level) * 0.06 + normal(rng) * 0.8, 58, 86))
+
+  const squad = progressSquad(
+    team.squad,
+    {
+      level: teamLevel,
+      youthBonus: isUser ? o.academyBonus : 0,
+      useYouth: isUser,
+      removeIds: isUser ? o.leaving : [],
+      keepLineup: isUser && team.autoLineup === false,
+      idPrefix: `${isUser ? 'u' : 't' + team.id}-y${year}`,
+    },
+    rng,
+  )
+  return {
+    ...team,
+    level: teamLevel,
+    strength: squadStrength(squad),
+    form: 0,
+    tactic: isUser ? team.tactic : 'equilibrada',
+    squad,
+  }
+}
+
+// Cierra la temporada: ascensos, descensos, un año más para todos y arranque de la siguiente
+export function finishSeason(
+  league: LeagueState,
+  seed: number,
+  options: SeasonOptions = { academyBonus: 0, leaving: [] },
+): LeagueState {
   const rng = createRng(seed)
+  const year = league.year + 1
   const div1 = league.divisions[1]
   const div2 = league.divisions[2]
   const table1 = computeTable(div1)
@@ -344,10 +436,11 @@ export function finishSeason(league: LeagueState, seed: number): LeagueState {
   const stay2 = div2.teams.filter((t) => !promotedIds.has(t.id))
   const down = div1.teams.filter((t) => relegatedIds.has(t.id))
 
-  const newFirst = [...stay1, ...up].map((t) => evolveTeam(t, 1, rng))
-  const newSecond = [...stay2, ...down].map((t) => evolveTeam(t, 2, rng))
+  const newFirst = [...stay1, ...up].map((t) => evolveTeam(t, 1, year, rng, options))
+  const newSecond = [...stay2, ...down].map((t) => evolveTeam(t, 2, year, rng, options))
 
   return {
+    year,
     userDivision: newFirst.some((t) => t.id === USER_ID) ? 1 : 2,
     divisions: { 1: buildDivision(1, newFirst, rng), 2: buildDivision(2, newSecond, rng) },
   }

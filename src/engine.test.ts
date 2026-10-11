@@ -187,8 +187,8 @@ describe('30 temporadas seguidas', () => {
       expect(league.divisions[2].teams.length).toBe(TEAMS_PER_DIVISION)
       expect(all.some((t) => t.id === USER_ID)).toBe(true)
       for (const t of all) {
-        expect(t.strength).toBeGreaterThanOrEqual(55)
-        expect(t.strength).toBeLessThanOrEqual(88)
+        expect(t.strength).toBeGreaterThanOrEqual(50)
+        expect(t.strength).toBeLessThanOrEqual(92)
       }
     }
 

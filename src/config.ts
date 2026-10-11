@@ -1,3 +1,5 @@
+import type { SimPlayer } from './players'
+
 export const ROUNDS_PER_SEASON = 38
 export const TOTAL_SEASONS = 30
 
@@ -18,7 +20,7 @@ export const BASE_STOPS: BaseStop[] = [
     id: 'verano',
     name: 'Verano',
     when: 'Antes de empezar la temporada',
-    actions: 'Inversiones, ojeadores, cantera y mercado',
+    actions: 'Táctica, inversiones, ojeadores, cantera y mercado',
     duration: '60 a 90 s',
     round: 0,
   },
@@ -26,7 +28,7 @@ export const BASE_STOPS: BaseStop[] = [
     id: 'invierno',
     name: 'Invierno',
     when: 'A mitad de temporada',
-    actions: 'Lesiones, contratos y ajustes de plantilla',
+    actions: 'Táctica, lesiones, contratos y ajustes de plantilla',
     duration: '15 a 25 s',
     round: ROUNDS_PER_SEASON / 2,
   },
@@ -48,7 +50,9 @@ export interface NoticeOption {
   label: string
   detail?: string
   budget?: number // pago o ingreso único
-  salary?: number // cambio anual en la masa salarial
+  addPlayer?: SimPlayer // el jugador se une al primer equipo
+  removePlayerId?: string // el jugador sale del club ahora
+  leaveAtEndId?: string // el jugador se va cuando termine la temporada
 }
 
 export interface Notice {
@@ -79,13 +83,14 @@ export const EVENT_STOPS: EventStop[] = [
     afterStop: 'invierno',
     chance: 0.25,
     intro: 'Un club grande quiere a tu mejor jugador.',
+    // El aviso real se arma con tu mejor jugador (ver notices.ts)
     notices: [
       {
         id: 'oferta-record',
         kind: 'oferta',
         icon: '💸',
         title: 'Oferta récord por tu estrella',
-        text: 'CD Atalaya ofrece 1.500.000 € por tu mejor jugador.',
+        text: 'Un club grande ofrece 1.500.000 € por tu mejor jugador.',
         required: true,
         options: [
           { id: 'aceptar', label: 'Aceptar la oferta', detail: 'Vendes y refuerzas las arcas', budget: 1_500_000 },
@@ -118,7 +123,7 @@ export const EVENT_STOPS: EventStop[] = [
   },
 ]
 
-/* ---------- Inversiones y finanzas ---------- */
+/* ---------- Inversiones ---------- */
 export type InvestArea = 'scouts' | 'academy' | 'stadium'
 
 export const LEVEL_NAMES = ['Mínimo', 'Básico', 'Alto', 'Máximo']
@@ -136,7 +141,7 @@ export const INVESTMENTS: Record<
   academy: {
     label: 'Cantera',
     icon: '🌱',
-    effect: 'Más juveniles destacados cada año.',
+    effect: 'Juveniles con más potencial y más juveniles destacados cada año.',
     costs: [100_000, 250_000, 500_000, 900_000],
   },
   stadium: {
@@ -149,17 +154,4 @@ export const INVESTMENTS: Record<
 
 export const START_INVESTMENTS: Record<InvestArea, number> = { scouts: 1, academy: 1, stadium: 1 }
 
-// Cifras provisorias: se ajustan en el balance (Paso 11)
-export const SALARY_BASE = 1_900_000
-export const OTHER_INCOME = [
-  { label: 'Patrocinios', amount: 1_100_000 },
-  { label: 'Derechos de TV', amount: 700_000 },
-  { label: 'Otros', amount: 200_000 },
-]
-export const TICKET_INCOME_BASE = 700_000
-export const TICKET_INCOME_PER_LEVEL = 100_000
-
 export const MISSION_COST = 60_000 // costo de enviar a los ojeadores
-export const RENEWAL_RAISE = 40_000 // aumento anual al renovar
-export const YOUTH_SALARY = 30_000 // salario anual de un juvenil promovido
-export const NEW_SIGNING_SALARY = 50_000 // salario anual de un fichaje

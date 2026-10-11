@@ -1,7 +1,7 @@
 import { BASE_STOPS, EVENT_STOPS, START_INVESTMENTS, TOTAL_SEASONS } from './config'
 import type { BaseStopId, InvestArea, Notice } from './config'
 import { buildNotices } from './notices'
-import type { Position } from './sample'
+import type { ScoutFilter } from './players'
 import { createLeague, finishSeason, setUserTactic, simulateLeague, userSeasonResult } from './engine'
 import type { LeagueState, SeasonOutcome, Tactic } from './engine'
 import { clamp, mixSeed, randomSeed } from './rng'
@@ -9,11 +9,8 @@ import { PRESTIGE_MAX, PRESTIGE_MIN, START_PRESTIGE, prestigeChange } from './ec
 
 export const GAME_KEY = 'lifetime-game'
 
-export interface ScoutOrder {
-  pos: Position
-  minRating: number
-  minPotential: number
-}
+// Lo que le pides a los ojeadores: posición, valoración, potencial y edad
+export type ScoutOrder = ScoutFilter
 
 export interface SeasonRecord extends SeasonOutcome {
   season: number
@@ -30,7 +27,7 @@ export interface GameState {
   answers: Record<string, string> // aviso -> opción elegida
   investments: Record<InvestArea, number> // nivel 0 a 3 de cada inversión
   scoutOrder: ScoutOrder | null // búsqueda en curso
-  salaryExtra: number // cambio acumulado en la masa salarial
+  leaving: string[] // jugadores que se van al terminar la temporada
   league: LeagueState // las dos divisiones con sus partidos
   tactic: Tactic // táctica del club del jugador
   prestige: number
@@ -51,7 +48,7 @@ export function initialGame(rng: () => number = Math.random): GameState {
     answers: {},
     investments: { ...START_INVESTMENTS },
     scoutOrder: null,
-    salaryExtra: 0,
+    leaving: [],
     league: createLeague(seed),
     tactic: 'equilibrada',
     prestige: START_PRESTIGE,
@@ -74,10 +71,11 @@ export function loadGame(): GameState {
       !Array.isArray(g.notices) ||
       typeof g.investments !== 'object' ||
       g.investments === null ||
-      typeof g.salaryExtra !== 'number' ||
+      !Array.isArray(g.leaving) ||
       typeof g.league !== 'object' ||
       g.league === null ||
       !('divisions' in g.league) ||
+      !('year' in g.league) ||
       typeof g.tactic !== 'string' ||
       typeof g.prestige !== 'number' ||
       !Array.isArray(g.history)
@@ -131,7 +129,11 @@ function nextBase(game: GameState): GameState {
     round: BASE_STOPS[0].round,
     eventId: null,
     pending: [],
-    league: finishSeason(game.league, mixSeed(game.seed, game.season, 999)),
+    league: finishSeason(game.league, mixSeed(game.seed, game.season, 999), {
+      academyBonus: (game.investments.academy - 1) * 2.5,
+      leaving: game.leaving,
+    }),
+    leaving: [],
     prestige,
     history,
   }

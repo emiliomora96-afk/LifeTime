@@ -1,7 +1,8 @@
 import type { Level } from './engine'
 
 // Cifras provisorias: se ajustan en el balance (Paso 11)
-export const SALARY_BY_DIVISION: Record<Level, number> = { 1: 4_500_000, 2: 1_900_000 }
+// Personal del club (no jugadores). Los sueldos de los jugadores salen de la plantilla.
+export const STAFF_COST_BY_DIVISION: Record<Level, number> = { 1: 1_500_000, 2: 300_000 }
 export const TICKETS_BASE: Record<Level, number> = { 1: 1_500_000, 2: 600_000 }
 export const TICKETS_PER_STADIUM_LEVEL: Record<Level, number> = { 1: 200_000, 2: 100_000 }
 export const SPONSOR_BASE: Record<Level, number> = { 1: 1_200_000, 2: 600_000 }

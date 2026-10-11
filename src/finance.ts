@@ -1,12 +1,13 @@
 import { INVESTMENTS } from './config'
 import type { InvestArea } from './config'
-import { ROUNDS, userPosition } from './engine'
+import { ROUNDS, getUserSquad, userPosition } from './engine'
 import type { GameState } from './game'
+import { playerSalary } from './players'
 import {
   LEAGUE_TITLE_PRIZE,
   OTHER_INCOME,
   POSITION_PRIZE_STEP,
-  SALARY_BY_DIVISION,
+  STAFF_COST_BY_DIVISION,
   SPONSOR_BASE,
   SPONSOR_PER_PRESTIGE,
   TICKETS_BASE,
@@ -42,7 +43,8 @@ export function seasonExpenses(game: GameState): Line[] {
   const level = game.league.userDivision
   const areas = Object.keys(INVESTMENTS) as InvestArea[]
   return [
-    { label: 'Salarios', amount: SALARY_BY_DIVISION[level] + game.salaryExtra },
+    { label: 'Salarios de jugadores', amount: getUserSquad(game.league).reduce((sum, p) => sum + playerSalary(p), 0) },
+    { label: 'Personal del club', amount: STAFF_COST_BY_DIVISION[level] },
     ...areas.map((a) => ({
       label: INVESTMENTS[a].label,
       amount: INVESTMENTS[a].costs[game.investments[a]],
