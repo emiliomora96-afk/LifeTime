@@ -1,0 +1,43 @@
+/* ---------- Ficha del jugador ---------- */
+.lineup-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+@media (max-width: 1000px) { .lineup-body { grid-template-columns: 1fr; } }
+
+.ficha { position: relative; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.ficha-empty { align-items: center; justify-content: center; text-align: center; color: var(--muted); min-height: 220px; font-size: 0.9rem; }
+.ficha-empty-icon { font-size: 2.2rem; opacity: 0.6; }
+.ficha-empty p { margin: 0; max-width: 220px; }
+
+.ficha-close { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; line-height: 1; }
+.ficha-close:hover { color: var(--text); border-color: var(--accent); }
+
+.ficha-top { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; padding-right: 28px; }
+.ficha-photo { width: 64px; height: 64px; display: block; }
+.ficha-id { display: flex; flex-direction: column; min-width: 0; }
+.ficha-first { font-size: 0.85rem; color: var(--muted); }
+.ficha-last { font-size: 1.25rem; line-height: 1.15; overflow-wrap: anywhere; }
+.ficha-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
+.ficha-rating { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 58px; height: 58px; border: 3px solid; border-radius: 50%; font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.ficha-rating small { font-size: 0.55rem; font-weight: 600; letter-spacing: 0.08em; margin-top: 2px; color: var(--muted); }
+
+.ficha-pot { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.ficha-pot-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.85rem; color: var(--muted); }
+.ficha-pot-head strong { font-size: 1.15rem; color: var(--text); }
+.ficha-bar { position: relative; height: 10px; margin: 10px 0 8px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+.ficha-band { position: absolute; top: 0; bottom: 0; background: rgba(59, 130, 246, 0.45); border-radius: 99px; }
+.ficha-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; opacity: 0.9; }
+.ficha-pot-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--muted); }
+
+.ficha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 0; }
+.ficha-grid > div { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.ficha-grid .ficha-wide { grid-column: 1 / -1; }
+.ficha-grid dt { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.ficha-grid dd { margin: 2px 0 0; font-weight: 600; font-size: 0.95rem; }
+
+.ficha-swap { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 10px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+.ficha-swap:hover { background: var(--accent-hover); }
+.ficha-swap.active { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.ficha-hint { margin: -6px 0 0; font-size: 0.75rem; color: var(--muted); text-align: center; }
+
+.squad-table tbody tr { cursor: pointer; }
+.squad-table tbody tr:hover td { background: rgba(59, 130, 246, 0.1); }
+.nat-code { color: var(--muted); font-size: 0.72rem; margin-left: 4px; }

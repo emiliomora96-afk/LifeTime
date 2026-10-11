@@ -2,15 +2,20 @@ import type { Position } from './sample'
 import { STARTERS, SUBS } from './sample'
 import type { Rng } from './rng'
 import { clamp, normal } from './rng'
+import type { NatPool } from './nations'
+import { GIANT_POOL, SPAIN_POOL, randomIdentity } from './nations'
+import type { CorePlayer } from './clubs'
 import type { SimPlayer } from './players'
 import {
   createPlayer,
   newSigning,
   newYouth,
   playerFromRating,
+  PRODIGY_CHANCE,
   progressPlayer,
-  randomName,
+  nameParts,
   retireChance,
+  rollProdigy,
 } from './players'
 
 export const POSITION_ORDER: Position[] = ['POR', 'DEF', 'MED', 'DEL']
@@ -73,7 +78,7 @@ export function squadStrength(squad: SimPlayer[]): number {
 }
 
 // Plantilla generada para un club rival, ajustada a su nivel
-export function placeholderSquad(teamId: number, level: number, rng: Rng): SimPlayer[] {
+export function placeholderSquad(teamId: number, level: number, rng: Rng, pool: NatPool = SPAIN_POOL): SimPlayer[] {
   const players: SimPlayer[] = []
   let n = 0
   for (const pos of POSITION_ORDER) {
@@ -87,7 +92,9 @@ export function placeholderSquad(teamId: number, level: number, rng: Rng): SimPl
         55,
         97,
       )
-      players.push(createPlayer({ id: `t${teamId}-${n++}`, name: randomName(rng), pos, age, peak, starter: false }, rng))
+      const prodigy = rollProdigy(age, PRODIGY_CHANCE.squad, rng)
+      const who = randomIdentity(rng, pool)
+      players.push(createPlayer({ id: `t${teamId}-${n++}`, ...who, pos, age, peak, starter: false, prodigy }, rng))
     }
   }
 
@@ -102,11 +109,38 @@ export function placeholderSquad(teamId: number, level: number, rng: Rng): SimPl
   )
 }
 
+// Plantilla de un gigante: el once está hecho a mano y los 7 suplentes se generan a su nivel
+export function giantSquad(teamId: number, coreXI: CorePlayer[], rng: Rng): SimPlayer[] {
+  const starters = coreXI.map((c, i) => {
+    const { first, last } = nameParts({ name: c.name })
+    return playerFromRating(
+      { id: `t${teamId}-c${i}`, name: c.name, first, last, nat: c.nat, pos: c.pos, age: c.age, rating: c.rating, starter: true },
+      rng,
+    )
+  })
+  const level = squadStrength(starters)
+  const bench = placeholderSquad(teamId, level, rng, GIANT_POOL).filter((p) => !p.starter)
+  return pickStarters([...starters, ...bench])
+}
+
 // Plantilla del club del jugador (por ahora, la de ejemplo)
 export function userSquad(rng: Rng): SimPlayer[] {
   return pickStarters(
     [...STARTERS, ...SUBS].map((p) =>
-      playerFromRating({ id: `u-${p.id}`, name: p.name, pos: p.pos, age: p.age, rating: p.rating, starter: false }, rng),
+      playerFromRating(
+        {
+          id: `u-${p.id}`,
+          name: p.name,
+          ...nameParts({ name: p.name }),
+          nat: 'ESP' as const,
+          pos: p.pos,
+          age: p.age,
+          rating: p.rating,
+          starter: false,
+          prodigy: rollProdigy(p.age, PRODIGY_CHANCE.youth, rng),
+        },
+        rng,
+      ),
     ),
   )
 }

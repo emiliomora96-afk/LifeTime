@@ -1,8 +1,9 @@
 import { clamp, createRng, mixSeed, normal, pickWeighted, poisson, round1, shuffle } from './rng'
 import type { Rng } from './rng'
-import { pickStarters, placeholderSquad, progressSquad, repairStarters, squadStrength, userSquad } from './squads'
+import { giantSquad, pickStarters, placeholderSquad, progressSquad, repairStarters, squadStrength, userSquad } from './squads'
 import type { SimPlayer } from './players'
-import { DIV1_NAMES, DIV2_NAMES } from './sample'
+import { DIV1_CLUBS, DIV2_CLUBS, USER_SLOT_DIV2 } from './clubs'
+import type { ClubDef, Tier } from './clubs'
 
 export type Level = 1 | 2
 export type Tactic = 'ofensiva' | 'equilibrada' | 'defensiva'
@@ -10,6 +11,7 @@ export type Tactic = 'ofensiva' | 'equilibrada' | 'defensiva'
 export const USER_ID = 0
 export const TEAMS_PER_DIVISION = 20
 export const ROUNDS = 2 * (TEAMS_PER_DIVISION - 1) // 38 jornadas
+export const LEAGUE_VERSION = 2
 export const PROMOTED_COUNT = 3 // provisorio: las reglas de ascenso están pendientes
 
 /* ---------- Ajustes del modelo de partido ---------- */
@@ -37,6 +39,10 @@ export interface SimTeam {
   form: number // de -1 a 1, según los últimos resultados
   tactic: Tactic
   squad: SimPlayer[]
+  city?: string // ciudad del club (el club del jugador la tiene en su ficha)
+  colors?: [string, string] // colores del club
+  tier?: Tier // gigante, aspirante, media tabla...
+  anchor?: number // los gigantes siempre apuntan a su nivel, estén en la división que estén
   autoLineup?: boolean // false: el jugador eligió su once (solo el club del jugador). Sin definir = automático
 }
 
@@ -76,6 +82,7 @@ export interface DivisionState {
 }
 
 export interface LeagueState {
+  v?: number // versión de la estructura (si cambia, la partida guardada se reinicia)
   year: number // temporadas cerradas
   userDivision: Level
   divisions: Record<Level, DivisionState>
@@ -209,6 +216,13 @@ export function simulateDivision(div: DivisionState, toRound: number, rng: Rng):
       away.form = nextForm(away.form, match.ag - match.hg)
     }
   }
+  // Los titulares de este tramo suman las jornadas jugadas (cuenta para su crecimiento)
+  const rounds = Math.max(0, target - div.played)
+  if (rounds > 0) {
+    for (const team of teams) {
+      team.squad = team.squad.map((p) => (p.starter ? { ...p, starts: (p.starts ?? 0) + rounds } : p))
+    }
+  }
   return { ...div, teams, results, played: Math.max(div.played, target) }
 }
 
@@ -247,10 +261,17 @@ export function computeTable(div: DivisionState): StandRow[] {
 }
 
 /* ---------- Liga ---------- */
-function makeTeam(id: number, name: string, level: number, rng: Rng): SimTeam {
+function makeTeam(id: number, def: ClubDef, level: number, rng: Rng): SimTeam {
+  const meta = { city: def.city, colors: def.colors, tier: def.tier }
+  if (def.core) {
+    // Gigante: su nivel sale de su once y siempre apunta a él
+    const squad = giantSquad(id, def.core, rng)
+    const strength = squadStrength(squad)
+    return { id, name: def.name, level: strength, strength, form: 0, tactic: 'equilibrada', squad, anchor: strength, ...meta }
+  }
   const lv = round1(level)
   const squad = placeholderSquad(id, lv, rng)
-  return { id, name, level: lv, strength: squadStrength(squad), form: 0, tactic: 'equilibrada', squad }
+  return { id, name: def.name, level: lv, strength: squadStrength(squad), form: 0, tactic: 'equilibrada', squad, ...meta }
 }
 
 function makeUserTeam(rng: Rng): SimTeam {
@@ -267,15 +288,17 @@ function buildDivision(level: Level, teams: SimTeam[], rng: Rng): DivisionState 
 export function createLeague(seed: number): LeagueState {
   const rng = createRng(mixSeed(seed, 7))
 
-  const first = DIV1_NAMES.map((name, i) => makeTeam(i + 1, name, 81 - i * 0.6 + normal(rng), rng))
+  const first = DIV1_CLUBS.map((def, i) => makeTeam(i + 1, def, def.base + normal(rng), rng))
 
-  let nextId = DIV1_NAMES.length + 1
-  const second: SimTeam[] = DIV2_NAMES.map((name, i) => {
-    if (name === null) return makeUserTeam(rng)
-    return makeTeam(nextId++, name, 72.5 - i * 0.55 + normal(rng), rng)
+  let nextId = DIV1_CLUBS.length + 1
+  const second: SimTeam[] = []
+  DIV2_CLUBS.forEach((def, i) => {
+    if (i === USER_SLOT_DIV2) second.push(makeUserTeam(rng))
+    second.push(makeTeam(nextId++, def, def.base + normal(rng), rng))
   })
 
   return {
+    v: LEAGUE_VERSION,
     year: 0,
     userDivision: 2,
     divisions: { 1: buildDivision(1, first, rng), 2: buildDivision(2, second, rng) },
@@ -391,7 +414,13 @@ function evolveTeam(team: SimTeam, level: Level, year: number, rng: Rng, o: Seas
   const isUser = team.id === USER_ID
   const teamLevel = isUser
     ? team.strength
-    : round1(clamp(team.level + (LEVEL_MEAN[level] - team.level) * 0.06 + normal(rng) * 0.8, 58, 86))
+    : round1(
+        clamp(
+          team.level + ((team.anchor ?? LEVEL_MEAN[level]) - team.level) * 0.06 + normal(rng) * 0.8,
+          58,
+          team.anchor ? 92 : 86,
+        ),
+      )
 
   const squad = progressSquad(
     team.squad,
@@ -440,6 +469,7 @@ export function finishSeason(
   const newSecond = [...stay2, ...down].map((t) => evolveTeam(t, 2, year, rng, options))
 
   return {
+    v: LEAGUE_VERSION,
     year,
     userDivision: newFirst.some((t) => t.id === USER_ID) ? 1 : 2,
     divisions: { 1: buildDivision(1, newFirst, rng), 2: buildDivision(2, newSecond, rng) },

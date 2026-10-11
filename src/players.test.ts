@@ -18,7 +18,7 @@ import { addUserPlayer, createLeague, finishSeason, getUserSquad, removeUserPlay
 
 const N = 300
 
-// Carrera completa de N jugadores con pico 88 que empiezan a los 17 años
+// Carrera completa de N jugadores titulares fijos con pico 88 que empiezan a los 17 años
 function careers(pos: Position, seed: number) {
   const rng = createRng(seed)
   const rating: Record<number, number[]> = {}
@@ -41,7 +41,7 @@ function careers(pos: Position, seed: number) {
       }
       oldest = Math.max(oldest, p.age)
       if (rng() < retireChance(p.age, p.pos)) break
-      p = progressPlayer(p, rng)
+      p = progressPlayer({ ...p, starts: 38 }, rng) // titular fijo: sigue la curva normal
     }
   }
   const avg = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length

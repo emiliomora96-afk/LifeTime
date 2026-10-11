@@ -1,17 +1,25 @@
 import type { Position } from './sample'
 import type { Rng } from './rng'
-import { clamp, normal, pickOne } from './rng'
+import { clamp, normal } from './rng'
+import type { NatId, NatPool } from './nations'
+import { ACADEMY_POOL, GIANT_POOL, SPAIN_POOL, randomIdentity, talentBonus } from './nations'
 
 /* ---------- Jugador ---------- */
 export interface SimPlayer {
   id: string
-  name: string
+  name: string // nombre completo
+  first?: string // nombre de pila (si falta, se saca de name)
+  last?: string // apellido
+  nat?: NatId // nacionalidad
   pos: Position
   age: number
   rating: number // valoración actual
   peak: number // valoración máxima que alcanzará. No se muestra: se ve un rango
   potBias: number // de -0.6 a 0.6: descentra el rango para que no revele el pico
   starter: boolean
+  starts?: number // jornadas jugadas como titular esta temporada (se reinicia al cerrarla)
+  prodigy?: boolean // OCULTO: nadie lo ve. Si juega, puede subir hasta 6 puntos por temporada
+  lastGain?: number // cuánto cambió su valoración en la última temporada
 }
 
 export interface ScoutFilter {
@@ -49,6 +57,17 @@ const DECLINE_MAX = 3.5
 const RETIRE: Record<number, number> = { 35: 0.08, 36: 0.2, 37: 0.4, 38: 0.6, 39: 0.8 }
 
 const GAP_AT_16 = 30 // distancia media entre su valoración a los 16 y su pico
+
+// Crecimiento por temporada según los minutos (lo que sube cada año, como máximo)
+const SEASON_ROUNDS = 38
+const SUB_CAP = 3 // suplente que no juega: hasta 3 puntos por temporada
+const STARTER_CAP = 4 // titular fijo: hasta 4 puntos por temporada
+const PRODIGY_CAP = 6 // titular fijo y prodigio (oculto): hasta 6 puntos por temporada
+const SUB_SPEED = 0.9 // velocidad respecto a la curva normal
+const STARTER_SPEED = 1.25
+const PRODIGY_SPEED = 1.7 // un prodigio que juega explota
+const PRODIGY_PEAK_BONUS = 5 // los prodigios llegan más alto
+export const PRODIGY_CHANCE = { youth: 0.05, scout: 0.05, squad: 0.03 }
 
 function peakShift(pos: Position): number {
   return pos === 'POR' ? PEAK_SHIFT : 0
@@ -109,22 +128,11 @@ export function potentialLabel(p: SimPlayer): string {
 }
 
 /* ---------- Crear jugadores ---------- */
-const FIRST_NAMES = [
-  'Adrián', 'Bruno', 'Carlos', 'Darío', 'Emilio', 'Félix', 'Gonzalo', 'Héctor', 'Íñigo', 'Julio',
-  'Kiko', 'Lucas', 'Marco', 'Néstor', 'Óscar', 'Pedro', 'Quique', 'Rodrigo', 'Sergio', 'Teo',
-  'Unai', 'Víctor', 'Xavi', 'Yago', 'Zacarías', 'Aitor', 'Borja', 'Cayetano', 'Damián', 'Eloy',
-  'Fran', 'Gerard', 'Hugo', 'Iker', 'Jon', 'Koldo', 'Luis', 'Mikel', 'Nacho', 'Omar',
-]
-
-const LAST_NAMES = [
-  'Arteaga', 'Bermejo', 'Cabrera', 'Duarte', 'Escalante', 'Fontán', 'Galindo', 'Heredia', 'Iglesias', 'Jaramillo',
-  'Lozano', 'Navarrete', 'Ordóñez', 'Palacios', 'Quintero', 'Ramos', 'Salvatierra', 'Urrutia', 'Vallejo', 'Zamora',
-  'Alcázar', 'Barrios', 'Calleja', 'Domínguez', 'Esteban', 'Ferrer', 'Gallardo', 'Huerta', 'Ibáñez', 'Juárez',
-  'Lara', 'Montero', 'Nieto', 'Olmos', 'Peña', 'Revilla', 'Sandoval', 'Tapia', 'Uribe', 'Vega',
-]
-
-export function randomName(rng: Rng): string {
-  return `${pickOne(FIRST_NAMES, rng)} ${pickOne(LAST_NAMES, rng)}`
+// Nombre y apellido del jugador (los jugadores antiguos solo tienen name)
+export function nameParts(p: { name: string; first?: string; last?: string }): { first: string; last: string } {
+  if (p.first && p.last) return { first: p.first, last: p.last }
+  const i = p.name.indexOf(' ')
+  return i < 0 ? { first: p.name, last: '' } : { first: p.name.slice(0, i), last: p.name.slice(i + 1) }
 }
 
 function randomBias(rng: Rng): number {
@@ -154,55 +162,92 @@ function inferPeak(age: number, rating: number, pos: Position, rng: Rng): number
 export interface PlayerBase {
   id: string
   name: string
+  first?: string
+  last?: string
+  nat?: NatId
   pos: Position
   age: number
   starter: boolean
+  prodigy?: boolean
+}
+
+// ¿Es un prodigio? Solo puede serlo un joven (hasta 21 años). Es un rasgo oculto.
+export function rollProdigy(age: number, chance: number, rng: Rng): boolean {
+  return age <= 21 && rng() < chance
 }
 
 // A partir de su pico (para jugadores nuevos)
 export function createPlayer(base: PlayerBase & { peak: number }, rng: Rng): SimPlayer {
-  return { ...base, rating: ratingForAge(base.peak, base.age, base.pos, rng), potBias: randomBias(rng) }
+  const peak = base.prodigy ? Math.min(97, base.peak + PRODIGY_PEAK_BONUS) : base.peak
+  return { ...base, peak, rating: ratingForAge(peak, base.age, base.pos, rng), potBias: randomBias(rng), starts: 0 }
 }
 
 // A partir de su valoración actual (para plantillas ya hechas)
 export function playerFromRating(base: PlayerBase & { rating: number }, rng: Rng): SimPlayer {
-  return { ...base, peak: inferPeak(base.age, base.rating, base.pos, rng), potBias: randomBias(rng) }
+  const inferred = inferPeak(base.age, base.rating, base.pos, rng)
+  const peak = base.prodigy ? Math.min(97, inferred + PRODIGY_PEAK_BONUS) : inferred
+  return { ...base, peak, potBias: randomBias(rng), starts: 0 }
 }
 
 // Juvenil de la cantera (16 a 18 años)
-export function newYouth(id: string, pos: Position, level: number, bonus: number, rng: Rng): SimPlayer {
+export function newYouth(
+  id: string,
+  pos: Position,
+  level: number,
+  bonus: number,
+  rng: Rng,
+  pool: NatPool = ACADEMY_POOL,
+): SimPlayer {
+  const who = randomIdentity(rng, pool)
   const age = 16 + Math.floor(rng() * 3)
-  const peak = clamp(Math.round(level - 3 + bonus + normal(rng) * 5.5), 55, 97)
-  return createPlayer({ id, name: randomName(rng), pos, age, peak, starter: false }, rng)
+  const peak = clamp(Math.round(level - 3 + bonus + talentBonus(who.nat) + normal(rng) * 5.5), 55, 97)
+  const prodigy = rollProdigy(age, PRODIGY_CHANCE.youth, rng)
+  return createPlayer({ id, ...who, pos, age, peak, starter: false, prodigy }, rng)
 }
 
 // Fichaje de otro club para renovar la plantilla de la IA (19 a 28 años)
-export function newSigning(id: string, pos: Position, level: number, rng: Rng): SimPlayer {
+export function newSigning(id: string, pos: Position, level: number, rng: Rng, pool: NatPool = SPAIN_POOL): SimPlayer {
+  const who = randomIdentity(rng, pool)
   const age = 19 + Math.floor(rng() * 10)
-  const peak = clamp(Math.round(level + 1 + normal(rng) * 3.5), 55, 97)
-  return createPlayer({ id, name: randomName(rng), pos, age, peak, starter: false }, rng)
+  const peak = clamp(Math.round(level + 1 + talentBonus(who.nat) + normal(rng) * 3.5), 55, 97)
+  const prodigy = rollProdigy(age, PRODIGY_CHANCE.squad, rng)
+  return createPlayer({ id, ...who, pos, age, peak, starter: false, prodigy }, rng)
 }
 
 /* ---------- Un año más ---------- */
+// Cuánto jugó esta temporada, de 0 a 1 (los partidos como titular entre las 38 jornadas)
+export function playingTime(p: SimPlayer): number {
+  if (p.starts === undefined) return p.starter ? 1 : 0 // partidas guardadas antes de contar minutos
+  return clamp(p.starts / SEASON_ROUNDS, 0, 1)
+}
+
 export function progressPlayer(p: SimPlayer, rng: Rng): SimPlayer {
   const age = p.age + 1
   const effNew = age - peakShift(p.pos)
   const effOld = p.age - peakShift(p.pos)
+  const minutes = playingTime(p)
   let rating: number
 
   if (effNew <= 26) {
-    // Crece hacia su pico siguiendo su propia trayectoria
+    // Crece hacia su pico. Lo que sube cada año tiene un tope que depende de cuánto juega.
     const remOld = remaining(effOld) || 1
-    const scaled = (p.peak - p.rating) * (remaining(effNew) / remOld)
-    rating = p.peak - scaled + normal(rng) * 0.8
+    const normalGain = (p.peak - p.rating) * (1 - remaining(effNew) / remOld) // lo que subiría con la curva normal
+    const topSpeed = p.prodigy ? PRODIGY_SPEED : STARTER_SPEED
+    const speed = SUB_SPEED + (topSpeed - SUB_SPEED) * minutes
+    const topCap = p.prodigy ? PRODIGY_CAP : STARTER_CAP
+    const cap = SUB_CAP + (topCap - SUB_CAP) * minutes
+    rating = p.rating + clamp(normalGain * speed + normal(rng) * 0.6, 0, cap)
   } else {
     const drop = declineStep(age, p.pos)
-    if (drop === 0) rating = clamp(p.rating + (p.peak - p.rating) * 0.5 + normal(rng) * 0.6, p.peak - 2, p.peak)
-    else rating = p.rating - drop + normal(rng) * 0.6
+    if (drop === 0) {
+      // En su pico: se acerca a su valoración máxima (más despacio si no juega)
+      const catchUp = 0.25 + 0.25 * minutes
+      rating = clamp(p.rating + (p.peak - p.rating) * catchUp + normal(rng) * 0.6, p.peak - 2, p.peak)
+    } else rating = p.rating - drop + normal(rng) * 0.6
   }
 
   const next = clamp(Math.round(rating), 35, 99)
-  return { ...p, age, rating: next, peak: Math.max(p.peak, next) }
+  return { ...p, age, rating: next, peak: Math.max(p.peak, next), starts: 0, lastGain: next - p.rating }
 }
 
 /* ---------- Cazatalentos ---------- */
@@ -218,7 +263,9 @@ export function generateScoutTarget(filter: ScoutFilter, id: string, rng: Rng): 
 
     const needed = Math.max(filter.minPotential, filter.minRating + expectedGap)
     const peak = clamp(Math.round(needed + rng() * 8), 55, 97)
-    const player = createPlayer({ id, name: randomName(rng), pos: filter.pos, age, peak, starter: false }, rng)
+    const prodigy = rollProdigy(age, PRODIGY_CHANCE.scout, rng)
+    const who = randomIdentity(rng, GIANT_POOL)
+    const player = createPlayer({ id, ...who, pos: filter.pos, age, peak, starter: false, prodigy }, rng)
     if (player.rating >= filter.minRating && potentialRange(player)[1] >= filter.minPotential) return player
   }
   return null

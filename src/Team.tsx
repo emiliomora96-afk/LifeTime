@@ -1,20 +1,26 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Club } from './types'
 import type { LeagueState } from './engine'
 import { getUserSquad, getUserTeam } from './engine'
 import type { SimPlayer } from './players'
-import { phaseOf, potentialLabel } from './players'
+import { nameParts, phaseOf, potentialLabel } from './players'
+import { PHASES, gainClass, gainLabel } from './playerView'
+import PlayerCard from './PlayerCard'
 import type { Position } from './sample'
 import { FORMATION, POSITION_ORDER, pickStarters, squadStrength } from './squads'
 import PageHead from './PageHead'
 
-const PITCH_Y: Record<Position, number> = { POR: 88, DEF: 69, MED: 47, DEL: 18 }
+type Tab = Position | 'TODOS'
 
-const PHASES = {
-  crece: { label: '↗ Crece', cls: 'phase-up' },
-  pico: { label: '→ En su pico', cls: 'phase-peak' },
-  declive: { label: '↘ En declive', cls: 'phase-down' },
-}
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'POR', label: 'Porteros' },
+  { id: 'DEF', label: 'Defensas' },
+  { id: 'MED', label: 'Medios' },
+  { id: 'DEL', label: 'Delanteros' },
+  { id: 'TODOS', label: 'Todos' },
+]
+
+const PITCH_Y: Record<Position, number> = { POR: 88, DEF: 69, MED: 47, DEL: 18 }
 
 function xPositions(n: number): number[] {
   if (n === 1) return [50]
@@ -34,6 +40,9 @@ interface Props {
 
 export default function Team({ club, league, onSwap, onAutoLineup }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [swapMode, setSwapMode] = useState(false)
+  const [tab, setTab] = useState<Tab>('POR')
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const squad = getUserSquad(league)
   const team = getUserTeam(league)
@@ -45,23 +54,42 @@ export default function Team({ club, league, onSwap, onAutoLineup }: Props) {
 
   const selected = squad.find((p) => p.id === selectedId)
 
-  // Se puede cambiar con alguien de la misma posición que tenga el rol contrario
+  // En modo cambio: alguien de la misma posición que tenga el rol contrario
   function canSwap(p: SimPlayer): boolean {
-    return !!selected && p.id !== selected.id && p.pos === selected.pos && p.starter !== selected.starter
+    return swapMode && !!selected && p.id !== selected.id && p.pos === selected.pos && p.starter !== selected.starter
   }
 
-  function handlePick(p: SimPlayer) {
+  function handlePick(p: SimPlayer, fromTable = false) {
     if (selected && canSwap(p)) {
       onSwap(selected.id, p.id)
+      setSwapMode(false) // la ficha se queda en el jugador que movías
+      return
+    }
+    setSwapMode(false)
+    if (selectedId === p.id) {
       setSelectedId(null)
       return
     }
-    setSelectedId(selectedId === p.id ? null : p.id)
+    setSelectedId(p.id)
+    if (tab !== 'TODOS') setTab(p.pos) // la lista de abajo sigue al jugador que tocas
+    if (fromTable) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  function closeCard() {
+    setSelectedId(null)
+    setSwapMode(false)
   }
 
   const sorted = [...squad].sort(
     (a, b) => POSITION_ORDER.indexOf(a.pos) - POSITION_ORDER.indexOf(b.pos) || b.rating - a.rating,
   )
+  const shown = tab === 'TODOS' ? sorted : sorted.filter((p) => p.pos === tab)
+
+  function toggleSwap() {
+    // Al empezar un cambio, la lista muestra la posición del jugador para ver a quién puede cambiar
+    if (!swapMode && selected && tab !== 'TODOS') setTab(selected.pos)
+    setSwapMode((v) => !v)
+  }
 
   const tokens: { player: SimPlayer; x: number; y: number }[] = []
   for (const pos of POSITION_ORDER) {
@@ -120,47 +148,78 @@ export default function Team({ club, league, onSwap, onAutoLineup }: Props) {
         )}
 
         <p className="hint">
-          {selected
-            ? `Elige con quién cambiar a ${selected.name} (jugadores de la misma posición resaltados en verde), o vuelve a tocarlo para cancelar.`
-            : 'Toca un jugador del campo o de la tabla y luego aquel con quien quieres cambiarlo. Solo se puede cambiar entre jugadores de la misma posición.'}
+          {swapMode && selected
+            ? `Elige con quién cambiar a ${selected.name}: los jugadores resaltados en verde, o cancela desde su ficha.`
+            : 'Toca un jugador del campo o de la plantilla para ver su ficha. Desde ahí puedes cambiarlo de lugar.'}
         </p>
 
-        <div className="pitch">
-          <div className="pitch-box top" />
-          <div className="pitch-box bottom" />
-          {tokens.map(({ player, x, y }) => (
-            <button
-              key={player.id}
-              type="button"
-              className={
-                'token' +
-                (selected?.id === player.id ? ' selected' : '') +
-                (canSwap(player) ? ' target' : '')
-              }
-              style={{ left: `${x}%`, top: `${y}%` }}
-              onClick={() => handlePick(player)}
-            >
-              <div
-                className="token-badge"
-                style={{
-                  background: club.primaryColor,
-                  color: club.secondaryColor,
-                  borderColor: club.secondaryColor,
-                }}
-              >
-                {player.rating}
-              </div>
-              <div className="token-name">{player.name.split(' ').slice(-1)[0]}</div>
-            </button>
-          ))}
+        <div className="lineup-body">
+          <div>
+            <div className="pitch">
+              <div className="pitch-box top" />
+              <div className="pitch-box bottom" />
+              {tokens.map(({ player, x, y }) => (
+                <button
+                  key={player.id}
+                  type="button"
+                  className={
+                    'token' + (selected?.id === player.id ? ' selected' : '') + (canSwap(player) ? ' target' : '')
+                  }
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                  onClick={() => handlePick(player)}
+                >
+                  <div
+                    className="token-badge"
+                    style={{
+                      background: club.primaryColor,
+                      color: club.secondaryColor,
+                      borderColor: club.secondaryColor,
+                    }}
+                  >
+                    {player.rating}
+                  </div>
+                  <div className="token-name">{nameParts(player).last}</div>
+                </button>
+              ))}
+            </div>
+            <p className="hint center">El número es la valoración actual.</p>
+          </div>
+
+          <div ref={cardRef}>
+            <PlayerCard
+              player={selected}
+              club={club}
+              swapMode={swapMode}
+              onToggleSwap={toggleSwap}
+              onClose={closeCard}
+            />
+          </div>
         </div>
-        <p className="hint center">El número es la valoración actual.</p>
       </div>
 
       <div className="card">
         <h2>Plantilla completa</h2>
+        <p className="hint">
+          Los titulares con potencial alto pueden subir hasta 4 puntos por temporada y los suplentes hasta 3. Un joven
+          que se queda en el banco se retrasa y llega a su pico más tarde.
+        </p>
+        <div className="tabs">
+          {TABS.map((t) => {
+            const count = t.id === 'TODOS' ? squad.length : squad.filter((p) => p.pos === t.id).length
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={'tab' + (tab === t.id ? ' active' : '')}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label} ({count})
+              </button>
+            )
+          })}
+        </div>
         <div className="table-scroll">
-          <table className="data-table">
+          <table className="data-table squad-table">
             <thead>
               <tr>
                 <th>Pos</th>
@@ -170,39 +229,43 @@ export default function Team({ club, league, onSwap, onAutoLineup }: Props) {
                 <th className="num">Potencial</th>
                 <th>Fase</th>
                 <th>Rol</th>
+                <th className="num">Jornadas de titular</th>
+                <th className="num">Último año</th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {sorted.map((p) => {
+              {shown.map((p) => {
                 const phase = PHASES[phaseOf(p)]
+                const slow = phaseOf(p) === 'crece' && !p.starter
                 const isSelected = selected?.id === p.id
                 const isTarget = canSwap(p)
                 return (
-                  <tr key={p.id} className={(isSelected ? 'row-selected' : '') + (isTarget ? ' row-target' : '')}>
+                  <tr
+                    key={p.id}
+                    className={(isSelected ? 'row-selected' : '') + (isTarget ? ' row-target' : '')}
+                    onClick={() => handlePick(p, true)}
+                  >
                     <td>
                       <span className="pos">{p.pos}</span>
                     </td>
-                    <td>{p.name}</td>
+                    <td>
+                      {p.name}
+                      {p.nat ? <span className="nat-code"> {p.nat}</span> : null}
+                    </td>
                     <td className="num">{p.age}</td>
                     <td className="num">{p.rating}</td>
                     <td className="num">
                       <strong>{potentialLabel(p)}</strong>
                     </td>
-                    <td className={phase.cls}>{phase.label}</td>
+                    <td className={phase.cls}>{slow ? '↗ Crece despacio' : phase.label}</td>
                     <td>{p.starter ? 'Titular' : 'Suplente'}</td>
+                    <td className="num">{p.starts ?? 0}</td>
+                    <td className={'num ' + gainClass(p.lastGain)}>{gainLabel(p.lastGain)}</td>
                     <td className="num">
-                      {isSelected ? (
-                        <button type="button" className="mini-btn" onClick={() => handlePick(p)}>
-                          Cancelar
-                        </button>
-                      ) : isTarget ? (
-                        <button type="button" className="mini-btn" onClick={() => handlePick(p)}>
+                      {isTarget ? (
+                        <button type="button" className="mini-btn">
                           Intercambiar
-                        </button>
-                      ) : !selected ? (
-                        <button type="button" className="mini-btn" onClick={() => handlePick(p)}>
-                          Mover
                         </button>
                       ) : null}
                     </td>

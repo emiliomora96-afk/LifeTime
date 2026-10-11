@@ -2,7 +2,7 @@ import { BASE_STOPS, EVENT_STOPS, START_INVESTMENTS, TOTAL_SEASONS } from './con
 import type { BaseStopId, InvestArea, Notice } from './config'
 import { buildNotices } from './notices'
 import type { ScoutFilter } from './players'
-import { createLeague, finishSeason, setUserTactic, simulateLeague, userSeasonResult } from './engine'
+import { LEAGUE_VERSION, createLeague, finishSeason, setUserTactic, simulateLeague, userSeasonResult } from './engine'
 import type { LeagueState, SeasonOutcome, Tactic } from './engine'
 import { clamp, mixSeed, randomSeed } from './rng'
 import { PRESTIGE_MAX, PRESTIGE_MIN, START_PRESTIGE, prestigeChange } from './economy'
@@ -76,6 +76,7 @@ export function loadGame(): GameState {
       g.league === null ||
       !('divisions' in g.league) ||
       !('year' in g.league) ||
+      (g.league as LeagueState).v !== LEAGUE_VERSION ||
       typeof g.tactic !== 'string' ||
       typeof g.prestige !== 'number' ||
       !Array.isArray(g.history)
