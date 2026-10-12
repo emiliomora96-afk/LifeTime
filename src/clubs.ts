@@ -41,7 +41,11 @@ function core(rows: string[], shift = 0): CorePlayer[] {
   })
 }
 
-const ELITE_SHIFT = -8
+// Cuánto se baja el once hecho a mano de cada gigante. Madrilia es el más fuerte; el ajuste del Barça y del Atlético
+// es menor para que ningún gigante quede por debajo de un grande (Paso 7: antes el Atlético ganaba solo el 3% de las ligas).
+const ELITE_SHIFT = -8 // Real Madrilia
+const BARCELONIA_SHIFT = -7.5
+const ATLETICO_SHIFT = -6
 const GRANDE_SHIFT = -2.5
 
 /* ---------- Primera división: 7 gigantes + 13 clubes por nivel ---------- */
@@ -62,7 +66,7 @@ const GIANTS: ClubDef[] = [
       'DEF|Joaquín Ledesma|ARG|26|85', 'DEF|Pau Montero|ESP|22|86', 'DEF|Diogo Almeida|POR|29|85', 'DEF|Jordi Castro|ESP|25|84',
       'MED|Álvaro Molina|ESP|20|88', 'MED|Nolan Perrin|FRA|25|86', 'MED|Enzo Giménez|ARG|28|85',
       'DEL|Raphaël Roux|FRA|27|89', 'DEL|João Lima|BRA|21|89', 'DEL|Thomas Willems|BEL|30|85',
-    ], ELITE_SHIFT),
+    ], BARCELONIA_SHIFT),
   },
   {
     name: 'Atlético Madrileño', city: 'Madrid', colors: ['#dc2626', '#1d4ed8'], tier: 'elite', base: 84,
@@ -71,7 +75,7 @@ const GIANTS: ClubDef[] = [
       'DEF|Matías Gutiérrez|ARG|27|84', 'DEF|Hugo Navarro|ESP|26|83', 'DEF|Mehdi Benali|MAR|28|83', 'DEF|Facundo Paredes|ARG|31|82',
       'MED|Marcos Ortega|ESP|29|85', 'MED|Caio Barbosa|BRA|25|83', 'MED|Diego Ruiz|ESP|24|84',
       'DEL|Franco Bustos|ARG|30|86', 'DEL|Antoine Girard|FRA|26|85', 'DEL|Álvaro Garrido|ESP|28|83',
-    ], ELITE_SHIFT),
+    ], ATLETICO_SHIFT),
   },
   {
     name: 'Real Sevillana', city: 'Sevilla', colors: ['#f8fafc', '#dc2626'], tier: 'grande', base: 80,
