@@ -31,7 +31,7 @@ describe('minutos y crecimiento', () => {
   })
 
   it('los suplentes no se quedan demasiado atrás', () => {
-    expect(starter(23) - bench(23)).toBeLessThan(5.5)
+    expect(starter(23) - bench(23)).toBeLessThan(7) // los de potencial alto que juegan se despegan más
   })
 
   it('jugar la mitad da un crecimiento intermedio', () => {
@@ -85,13 +85,13 @@ describe('minutos en la liga', () => {
 
 describe('topes de crecimiento por temporada', () => {
   // Mayor subida en una temporada y subida media a los 17-20, para jugadores con pico 88
-  function gains(starts: number, prodigy: boolean, seed: number) {
+  function gains(starts: number, prodigy: boolean, seed: number, peak = 88, lastAge = 25) {
     const rng = createRng(seed)
     let max = 0
     const young: number[] = []
     for (let i = 0; i < N; i++) {
-      let p: SimPlayer = createPlayer({ id: 'g', name: 'g', pos: 'MED', age: 17, peak: 88, starter: false, prodigy }, rng)
-      for (let age = 17; age <= 25; age++) {
+      let p: SimPlayer = createPlayer({ id: 'g', name: 'g', pos: 'MED', age: 17, peak, starter: false, prodigy }, rng)
+      for (let age = 17; age <= lastAge; age++) {
         const next = progressPlayer({ ...p, starts }, rng)
         max = Math.max(max, next.rating - p.rating)
         if (age <= 20) young.push(next.rating - p.rating)
@@ -111,15 +111,27 @@ describe('topes de crecimiento por temporada', () => {
     expect(sub.avgYoung).toBeGreaterThan(2.3)
   })
 
-  it('un titular con potencial alto sube como mucho 4 puntos por temporada', () => {
-    expect(starter.max).toBeLessThanOrEqual(4)
-    expect(starter.avgYoung).toBeGreaterThan(3.3)
+  it('un titular con potencial alto sube como mucho 5 puntos por temporada', () => {
+    expect(starter.max).toBeLessThanOrEqual(5)
+    expect(starter.max).toBeGreaterThanOrEqual(5)
+    expect(starter.avgYoung).toBeGreaterThan(3.8)
+  })
+
+  it('un titular de potencial medio sigue con tope de 4 puntos', () => {
+    const medium = gains(38, false, 5, 80)
+    expect(medium.max).toBeLessThanOrEqual(4)
+    expect(medium.avgYoung).toBeLessThan(starter.avgYoung)
+  })
+
+  it('un suplente nunca sube más de 3 por temporada, tampoco al llegar a su pico (27 a 30 años)', () => {
+    expect(gains(0, false, 6, 88, 30).max).toBeLessThanOrEqual(3)
+    expect(gains(0, true, 6, 88, 30).max).toBeLessThanOrEqual(3)
   })
 
   it('un prodigio titular puede subir hasta 6 puntos por temporada, y nunca más', () => {
     expect(prodigyStarter.max).toBeLessThanOrEqual(6)
     expect(prodigyStarter.max).toBeGreaterThanOrEqual(5)
-    expect(prodigyStarter.avgYoung).toBeGreaterThan(starter.avgYoung + 1)
+    expect(prodigyStarter.avgYoung).toBeGreaterThan(starter.avgYoung + 0.7)
   })
 
   it('un prodigio que no juega sube como un suplente normal', () => {
@@ -146,6 +158,16 @@ describe('prodigios', () => {
     }
     expect(prodigies / young).toBeGreaterThan(0.01)
     expect(prodigies / young).toBeLessThan(0.07)
+  })
+
+  it('todo prodigio tiene un pico de 90 o más, y algunos llegan a 94 o 95', () => {
+    const rng = createRng(21)
+    const peaks: number[] = []
+    for (let i = 0; i < 400; i++) {
+      peaks.push(createPlayer({ id: 'p', name: 'p', pos: 'DEL', age: 17, peak: 70, starter: false, prodigy: true }, rng).peak)
+    }
+    expect(Math.min(...peaks)).toBeGreaterThanOrEqual(90)
+    expect(Math.max(...peaks)).toBeGreaterThanOrEqual(94)
   })
 
   it('solo los jóvenes pueden ser prodigios', () => {

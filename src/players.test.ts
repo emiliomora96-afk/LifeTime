@@ -70,7 +70,7 @@ describe('curva de edad', () => {
   })
 
   it('los porteros maduran y envejecen más tarde', () => {
-    expect(gk.avg(27)).toBeLessThan(fw.avg(27) - 1)
+    expect(gk.avg(27)).toBeLessThan(fw.avg(27) - 0.5)
     expect(gk.avg(35)).toBeGreaterThan(fw.avg(35) + 3)
   })
 

@@ -200,8 +200,8 @@ export default function Team({ club, league, onSwap, onAutoLineup }: Props) {
       <div className="card">
         <h2>Plantilla completa</h2>
         <p className="hint">
-          Los titulares con potencial alto pueden subir hasta 4 puntos por temporada y los suplentes hasta 3. Un joven
-          que se queda en el banco se retrasa y llega a su pico más tarde.
+          Los titulares pueden subir hasta 4 puntos por temporada (hasta 5 si su potencial es alto) y los suplentes hasta 3. Un
+          joven que se queda en el banco se retrasa y llega a su pico más tarde.
         </p>
         <div className="tabs">
           {TABS.map((t) => {

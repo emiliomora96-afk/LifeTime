@@ -9,7 +9,9 @@ import Team from './Team'
 import Standings from './Standings'
 import Calendar from './Calendar'
 import Stats from './Stats'
-import { Board, Market, Youth } from './Management'
+import { Board } from './Management'
+import Market from './MarketPage'
+import Academy from './AcademyPage'
 import type { Club } from './types'
 import type { SectionId } from './sections'
 import { MISSION_COST } from './config'
@@ -17,7 +19,11 @@ import type { InvestArea, Notice, NoticeOption } from './config'
 import { SAVE_KEY } from './data'
 import { GAME_KEY, advance, initialGame, loadGame, saveGame } from './game'
 import type { GameState, ScoutOrder } from './game'
-import { addUserPlayer, removeUserPlayer, setUserAutoLineup, swapUserStarters } from './engine'
+import { addUserPlayer, getUserSquad, removeUserPlayer, setUserAutoLineup, swapUserStarters } from './engine'
+import type { Listing, MarketOffer } from './market'
+import { buyBlocker, buyPlayer, quickBuyer, quickSalePrice, sellBlocker, sellPlayer } from './market'
+import type { SimPlayer } from './players'
+import { MAX_SQUAD } from './squads'
 import type { Tactic } from './engine'
 import { seasonExpenses, seasonIncome, total } from './finance'
 
@@ -120,6 +126,51 @@ export default function App() {
     setGame({ ...game, league: setUserAutoLineup(game.league) })
   }
 
+  /* ---------- Mercado ---------- */
+  function handleBuy(listing: Listing) {
+    if (!club || buyBlocker(game, club.budget, listing) !== null) return
+    updateBudget(club, -listing.price)
+    setGame({ ...game, league: buyPlayer(game.league, listing, game.seed) })
+  }
+
+  function completeSale(player: SimPlayer, teamId: number, amount: number) {
+    if (!club || sellBlocker(game, player) !== null) return
+    updateBudget(club, amount)
+    setGame({
+      ...game,
+      league: sellPlayer(game.league, player.id, teamId),
+      offers: game.offers.filter((o) => o.playerId !== player.id),
+      leaving: game.leaving.filter((id) => id !== player.id),
+    })
+  }
+
+  function handleSell(player: SimPlayer) {
+    completeSale(player, quickBuyer(game, player.id).id, quickSalePrice(player))
+  }
+
+  function handleAcceptOffer(offer: MarketOffer) {
+    const player = getUserSquad(game.league).find((p) => p.id === offer.playerId)
+    if (player) completeSale(player, offer.teamId, offer.amount)
+  }
+
+  function handleRejectOffer(offer: MarketOffer) {
+    setGame({ ...game, offers: game.offers.filter((o) => o.id !== offer.id) })
+  }
+
+  /* ---------- Cantera ---------- */
+  function handlePromote(player: SimPlayer) {
+    if (getUserSquad(game.league).length >= MAX_SQUAD) return
+    setGame({
+      ...game,
+      league: addUserPlayer(game.league, player),
+      academy: game.academy.filter((p) => p.id !== player.id),
+    })
+  }
+
+  function handleRelease(player: SimPlayer) {
+    setGame({ ...game, academy: game.academy.filter((p) => p.id !== player.id) })
+  }
+
   function handleContinue() {
     // Al salir del Cierre se aplica el balance de la temporada (con la posición final)
     if (club && game.eventId === null && game.baseStop === 'cierre') {
@@ -155,9 +206,18 @@ export default function App() {
       case 'calendario':
         return <Calendar club={c} league={game.league} />
       case 'mercado':
-        return <Market />
+        return (
+          <Market
+            club={c}
+            game={game}
+            onBuy={handleBuy}
+            onSell={handleSell}
+            onAcceptOffer={handleAcceptOffer}
+            onRejectOffer={handleRejectOffer}
+          />
+        )
       case 'cantera':
-        return <Youth />
+        return <Academy game={game} onPromote={handlePromote} onRelease={handleRelease} />
       case 'finanzas':
         return <FinancesLive club={c} game={game} onInvest={handleInvest} />
       case 'directiva':

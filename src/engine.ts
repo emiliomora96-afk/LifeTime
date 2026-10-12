@@ -11,7 +11,7 @@ export type Tactic = 'ofensiva' | 'equilibrada' | 'defensiva'
 export const USER_ID = 0
 export const TEAMS_PER_DIVISION = 20
 export const ROUNDS = 2 * (TEAMS_PER_DIVISION - 1) // 38 jornadas
-export const LEAGUE_VERSION = 2
+export const LEAGUE_VERSION = 3
 export const PROMOTED_COUNT = 3 // provisorio: las reglas de ascenso están pendientes
 
 /* ---------- Ajustes del modelo de partido ---------- */

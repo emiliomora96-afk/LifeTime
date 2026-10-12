@@ -1,13 +1,11 @@
 import { EVENT_STOPS } from './config'
 import type { Notice, NoticeOption } from './config'
 import { formatMoney } from './data'
-import { USER_ID, getUserSquad } from './engine'
+import { getUserSquad } from './engine'
 import type { SimPlayer } from './players'
-import { generateScoutTarget, marketValue, newYouth, playerSalary, potentialLabel } from './players'
-import { clamp, pickOne } from './rng'
+import { generateScoutTarget, marketValue, playerSalary, potentialLabel } from './players'
+import { clamp } from './rng'
 import type { GameState, ScoutOrder } from './game'
-
-const POSITIONS = ['POR', 'DEF', 'MED', 'DEL'] as const
 
 function tag(game: GameState): string {
   return `${game.season}-${game.eventId ?? game.baseStop}`
@@ -39,35 +37,6 @@ export function scoutChance(level: number, order: ScoutOrder): number {
   if (width <= 2) chance -= 0.15
   else if (width <= 5) chance -= 0.07
   return clamp(chance, 0.1, 0.9)
-}
-
-function youthNotices(game: GameState, squad: SimPlayer[], rng: () => number): Notice[] {
-  const count = 1 + (game.investments.academy >= 2 ? 1 : 0)
-  const level = game.league.divisions[game.league.userDivision].teams.find((t) => t.id === USER_ID)?.strength ?? 65
-  const bonus = (game.investments.academy - 1) * 2.5
-  const notices: Notice[] = []
-  for (let i = 0; i < count; i++) {
-    const id = `u-c-${tag(game)}-${i}`
-    const youth = newYouth(id, pickOne([...POSITIONS], rng), level, bonus, rng)
-    notices.push({
-      id: `${tag(game)}-cantera-${i}`,
-      kind: 'cantera',
-      icon: '🌱',
-      title: `${youth.name} destaca en la cantera`,
-      text: `${describe(youth)}. ¿Lo subes al primer equipo? Hoy tienes ${squad.length} jugadores en la plantilla.`,
-      required: false,
-      options: [
-        {
-          id: 'subir',
-          label: 'Subirlo al primer equipo',
-          detail: `Ficha profesional: cobra ${formatMoney(playerSalary(youth))} al año`,
-          addPlayer: youth,
-        },
-        { id: 'seguir', label: 'Que siga madurando en la cantera', detail: 'Sin costo' },
-      ],
-    })
-  }
-  return notices
 }
 
 function injuryNotice(game: GameState, squad: SimPlayer[], used: Set<string>, rng: () => number): Notice | null {
@@ -245,7 +214,6 @@ export function buildNotices(game: GameState, rng: () => number): Notice[] {
   const list: (Notice | null)[] = []
   if (game.baseStop === 'verano') {
     list.push(scoutNotice(game, rng))
-    list.push(...youthNotices(game, squad, rng))
     list.push(leaveNotice(game, squad, used, rng))
   } else if (game.baseStop === 'invierno') {
     list.push(injuryNotice(game, squad, used, rng))
@@ -255,7 +223,6 @@ export function buildNotices(game: GameState, rng: () => number): Notice[] {
   } else {
     list.push(injuryNotice(game, squad, used, rng))
     list.push(scoutNotice(game, rng))
-    list.push(...youthNotices(game, squad, rng))
     list.push(leaveNotice(game, squad, used, rng))
   }
   return list.filter((n): n is Notice => n !== null)

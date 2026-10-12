@@ -62,11 +62,15 @@ const GAP_AT_16 = 30 // distancia media entre su valoración a los 16 y su pico
 const SEASON_ROUNDS = 38
 const SUB_CAP = 3 // suplente que no juega: hasta 3 puntos por temporada
 const STARTER_CAP = 4 // titular fijo: hasta 4 puntos por temporada
+const HIGH_CAP = 5 // titular fijo de potencial alto: hasta 5 puntos por temporada
 const PRODIGY_CAP = 6 // titular fijo y prodigio (oculto): hasta 6 puntos por temporada
+export const HIGH_POTENTIAL = 85 // pico a partir del cual un jugador se considera de potencial alto
 const SUB_SPEED = 0.9 // velocidad respecto a la curva normal
 const STARTER_SPEED = 1.25
-const PRODIGY_SPEED = 1.7 // un prodigio que juega explota
+const HIGH_SPEED = 1.45 // los de potencial alto que juegan crecen más rápido
+const PRODIGY_SPEED = 2.0 // un prodigio que juega explota
 const PRODIGY_PEAK_BONUS = 5 // los prodigios llegan más alto
+const PRODIGY_MIN_PEAK = 90 // y su pico nunca baja de 90: los hay que llegan a 94 o 95
 export const PRODIGY_CHANCE = { youth: 0.05, scout: 0.05, squad: 0.03 }
 
 function peakShift(pos: Position): number {
@@ -176,16 +180,22 @@ export function rollProdigy(age: number, chance: number, rng: Rng): boolean {
   return age <= 21 && rng() < chance
 }
 
+// Pico de un prodigio: su pico normal más el bono, y nunca menos de 90 (entre 90 y 95 como mínimo)
+function prodigyPeak(peak: number, rng: Rng): number {
+  const floor = PRODIGY_MIN_PEAK + Math.floor(rng() * 6)
+  return Math.min(97, Math.max(peak + PRODIGY_PEAK_BONUS, floor))
+}
+
 // A partir de su pico (para jugadores nuevos)
 export function createPlayer(base: PlayerBase & { peak: number }, rng: Rng): SimPlayer {
-  const peak = base.prodigy ? Math.min(97, base.peak + PRODIGY_PEAK_BONUS) : base.peak
+  const peak = base.prodigy ? prodigyPeak(base.peak, rng) : base.peak
   return { ...base, peak, rating: ratingForAge(peak, base.age, base.pos, rng), potBias: randomBias(rng), starts: 0 }
 }
 
 // A partir de su valoración actual (para plantillas ya hechas)
 export function playerFromRating(base: PlayerBase & { rating: number }, rng: Rng): SimPlayer {
   const inferred = inferPeak(base.age, base.rating, base.pos, rng)
-  const peak = base.prodigy ? Math.min(97, inferred + PRODIGY_PEAK_BONUS) : inferred
+  const peak = base.prodigy ? prodigyPeak(inferred, rng) : inferred
   return { ...base, peak, potBias: randomBias(rng), starts: 0 }
 }
 
@@ -228,21 +238,25 @@ export function progressPlayer(p: SimPlayer, rng: Rng): SimPlayer {
   const minutes = playingTime(p)
   let rating: number
 
+  // Lo máximo que puede subir en la temporada según cuánto juega y qué potencial tiene
+  const high = p.peak >= HIGH_POTENTIAL
+  const topCap = p.prodigy ? PRODIGY_CAP : high ? HIGH_CAP : STARTER_CAP
+  const cap = SUB_CAP + (topCap - SUB_CAP) * minutes
+
   if (effNew <= 26) {
     // Crece hacia su pico. Lo que sube cada año tiene un tope que depende de cuánto juega.
     const remOld = remaining(effOld) || 1
     const normalGain = (p.peak - p.rating) * (1 - remaining(effNew) / remOld) // lo que subiría con la curva normal
-    const topSpeed = p.prodigy ? PRODIGY_SPEED : STARTER_SPEED
+    const topSpeed = p.prodigy ? PRODIGY_SPEED : high ? HIGH_SPEED : STARTER_SPEED
     const speed = SUB_SPEED + (topSpeed - SUB_SPEED) * minutes
-    const topCap = p.prodigy ? PRODIGY_CAP : STARTER_CAP
-    const cap = SUB_CAP + (topCap - SUB_CAP) * minutes
     rating = p.rating + clamp(normalGain * speed + normal(rng) * 0.6, 0, cap)
   } else {
     const drop = declineStep(age, p.pos)
     if (drop === 0) {
-      // En su pico: se acerca a su valoración máxima (más despacio si no juega)
+      // En su pico: se acerca a su valoración máxima (más despacio si no juega), sin pasar el tope por temporada
       const catchUp = 0.25 + 0.25 * minutes
-      rating = clamp(p.rating + (p.peak - p.rating) * catchUp + normal(rng) * 0.6, p.peak - 2, p.peak)
+      const gain = clamp((p.peak - p.rating) * catchUp + normal(rng) * 0.6, 0, cap)
+      rating = clamp(p.rating + gain, 0, p.peak)
     } else rating = p.rating - drop + normal(rng) * 0.6
   }
 

@@ -1,0 +1,10 @@
+/* ---------- Mercado y Cantera ---------- */
+.market-status { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.9rem; color: var(--muted); }
+.market-status.open { color: #86efac; border-color: #166534; }
+.market-check { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+.market-table td, .market-table th { white-space: nowrap; }
+.mini-btn.danger { border-color: #7f1d1d; color: #fca5a5; }
+.academy-info { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.academy-info > div { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 0.85rem; }
+.academy-info strong { display: block; font-size: 1.05rem; }
+.tag.last { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }

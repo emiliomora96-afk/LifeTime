@@ -1,10 +1,21 @@
 import { BASE_STOPS, EVENT_STOPS, START_INVESTMENTS, TOTAL_SEASONS } from './config'
 import type { BaseStopId, InvestArea, Notice } from './config'
 import { buildNotices } from './notices'
-import type { ScoutFilter } from './players'
-import { LEAGUE_VERSION, createLeague, finishSeason, setUserTactic, simulateLeague, userSeasonResult } from './engine'
+import type { ScoutFilter, SimPlayer } from './players'
+import {
+  LEAGUE_VERSION,
+  createLeague,
+  finishSeason,
+  getUserTeam,
+  setUserTactic,
+  simulateLeague,
+  userSeasonResult,
+} from './engine'
 import type { LeagueState, SeasonOutcome, Tactic } from './engine'
-import { clamp, mixSeed, randomSeed } from './rng'
+import { ageAcademy, generateIntake } from './academy'
+import { buildOffers } from './market'
+import type { MarketOffer } from './market'
+import { clamp, createRng, mixSeed, randomSeed } from './rng'
 import { PRESTIGE_MAX, PRESTIGE_MIN, START_PRESTIGE, prestigeChange } from './economy'
 
 export const GAME_KEY = 'lifetime-game'
@@ -28,6 +39,8 @@ export interface GameState {
   investments: Record<InvestArea, number> // nivel 0 a 3 de cada inversión
   scoutOrder: ScoutOrder | null // búsqueda en curso
   leaving: string[] // jugadores que se van al terminar la temporada
+  academy: SimPlayer[] // juveniles de la cantera del club
+  offers: MarketOffer[] // ofertas de otros clubes por tus jugadores (solo con el mercado abierto)
   league: LeagueState // las dos divisiones con sus partidos
   tactic: Tactic // táctica del club del jugador
   prestige: number
@@ -49,13 +62,18 @@ export function initialGame(rng: () => number = Math.random): GameState {
     investments: { ...START_INVESTMENTS },
     scoutOrder: null,
     leaving: [],
+    academy: [],
+    offers: [],
     league: createLeague(seed),
     tactic: 'equilibrada',
     prestige: START_PRESTIGE,
     history: [],
     finished: false,
   }
-  return { ...base, notices: buildNotices(base, rng) }
+  const teamLevel = getUserTeam(base.league)?.strength ?? 65
+  const academy = generateIntake([], base.investments.academy, teamLevel, 1, rng)
+  const started = { ...base, academy }
+  return { ...started, notices: buildNotices(started, rng), offers: buildOffers(started, rng) }
 }
 
 export function loadGame(): GameState {
@@ -72,6 +90,8 @@ export function loadGame(): GameState {
       typeof g.investments !== 'object' ||
       g.investments === null ||
       !Array.isArray(g.leaving) ||
+      !Array.isArray(g.academy) ||
+      !Array.isArray(g.offers) ||
       typeof g.league !== 'object' ||
       g.league === null ||
       !('divisions' in g.league) ||
@@ -123,6 +143,17 @@ function nextBase(game: GameState): GameState {
   if (game.season >= TOTAL_SEASONS) {
     return { ...game, history, prestige, finished: true, eventId: null, pending: [] }
   }
+  const league = finishSeason(game.league, mixSeed(game.seed, game.season, 999), {
+    academyBonus: (game.investments.academy - 1) * 2.5,
+    leaving: game.leaving,
+  })
+
+  // La cantera: los juveniles crecen, los que pasan de 19 años se van y llegan otros nuevos
+  const rng = createRng(mixSeed(game.seed, game.season, 777))
+  const aged = ageAcademy(game.academy, rng)
+  const teamLevel = getUserTeam(league)?.strength ?? 65
+  const intake = generateIntake(aged, game.investments.academy, teamLevel, game.season + 1, rng)
+
   return {
     ...game,
     season: game.season + 1,
@@ -130,10 +161,8 @@ function nextBase(game: GameState): GameState {
     round: BASE_STOPS[0].round,
     eventId: null,
     pending: [],
-    league: finishSeason(game.league, mixSeed(game.seed, game.season, 999), {
-      academyBonus: (game.investments.academy - 1) * 2.5,
-      leaving: game.leaving,
-    }),
+    league,
+    academy: [...aged, ...intake],
     leaving: [],
     prestige,
     history,
@@ -166,6 +195,7 @@ export function advance(game: GameState, rng: () => number = Math.random): GameS
   return {
     ...next,
     notices: buildNotices(next, rng),
+    offers: buildOffers(next, rng),
     answers: {},
     // La búsqueda se entrega en la próxima parada base, no en un evento
     scoutOrder: next.eventId === null ? null : next.scoutOrder,

@@ -28,7 +28,7 @@ export const BASE_STOPS: BaseStop[] = [
     id: 'invierno',
     name: 'Invierno',
     when: 'A mitad de temporada',
-    actions: 'Táctica, lesiones, contratos y ajustes de plantilla',
+    actions: 'Táctica, lesiones, contratos, mercado y ajustes de plantilla',
     duration: '15 a 25 s',
     round: ROUNDS_PER_SEASON / 2,
   },
