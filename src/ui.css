@@ -1,0 +1,374 @@
+/* =====================================================================
+   Lifetime · interfaz móvil primero (se importa la ÚLTIMA en main.tsx)
+   1. Variables y utilidades        4. Barra inferior, botón principal y hoja «Más»
+   2. Botones (3 variantes)         5. Plantilla, campo y fichas
+   3. Texto mínimo de 14 px         6. Movimiento reducido
+   ===================================================================== */
+
+/* ---------- 1. Variables y utilidades ---------- */
+:root {
+  --nav-h: 64px;                 /* alto de la barra inferior (sin la zona segura) */
+  --action-h: 76px;              /* espacio que ocupa el botón principal sobre la barra */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  --btn-r: 12px;
+  --btn-primary-bg: linear-gradient(180deg, #62a4ff 0%, #2f6df0 55%, #2459d8 100%);
+  --btn-danger-bg: linear-gradient(180deg, #f87171 0%, #dc2626 55%, #b91c1c 100%);
+  --btn-outline: #4a6296;
+}
+
+.only-mobile { display: none; }
+@media (max-width: 800px) {
+  .only-mobile { display: revert; }
+  .only-desktop { display: none !important; }
+}
+.mobile-nav.only-mobile { display: none; }
+@media (max-width: 800px) { .mobile-nav.only-mobile { display: grid; } }
+
+:where(button, select, input, summary, a):focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
+/* Estilos de reserva para piezas que el juego usa (por si no tienen estilo en otra hoja): especificidad 0 */
+:where(.options) { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+:where(.option) {
+  display: flex; flex-direction: column; gap: 4px; width: 100%; text-align: left; min-height: 48px; padding: 10px 14px;
+  border-radius: 12px; border: 1.5px solid var(--btn-outline); background: rgba(255, 255, 255, 0.02);
+  color: var(--text); font: inherit; cursor: pointer;
+}
+:where(.option.chosen) { border-color: #22c55e; background: rgba(34, 197, 94, 0.12); }
+:where(.option:disabled) { opacity: 0.55; cursor: not-allowed; }
+:where(.option-head) { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+:where(.cost.up) { color: #4ade80; }
+:where(.cost.down) { color: #f87171; }
+:where(.continue-card) { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+:where(.badges) { display: flex; gap: 8px; flex-wrap: wrap; }
+:where(.badge) { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); font-size: 0.875rem; }
+:where(.cards-grid) { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+
+/* ---------- 2. Botones: principal · secundario · peligro ----------
+   Los botones antiguos (.btn, .btn.secondary, .mini-btn, .mini-btn.danger, .ficha-swap, .swap-cancel)
+   y el componente <Button> comparten estos estilos: no hay que tocar cada pantalla. */
+.ui-btn, .btn, .mini-btn, .ficha-swap, .swap-cancel {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px; border-radius: var(--btn-r);
+  font: inherit; font-size: 1rem; font-weight: 700; line-height: 1.15; text-align: center;
+  cursor: pointer; user-select: none; -webkit-user-select: none; position: relative;
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, filter 0.15s;
+}
+.ui-btn--sm, .mini-btn { min-height: 44px; padding: 0 14px; font-size: 0.9375rem; }
+.ui-btn--lg { min-height: 56px; font-size: 1.0625rem; }
+.ui-btn--block { width: 100%; }
+.btn { width: 100%; }
+.btn.inline { width: auto; }
+.ui-btn-icon { font-size: 1.15em; line-height: 1; }
+
+/* Principal: degradado con relieve */
+.ui-btn--primary, .btn:not(.secondary):not(.danger), .ficha-swap:not(.active) {
+  color: #fff; background: var(--btn-primary-bg); border: 1px solid #1d4fc4; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.16), 0 3px 0 #163c94, 0 8px 16px rgba(37, 99, 235, 0.32);
+  margin-bottom: 3px;
+}
+/* Secundario: contorno */
+.ui-btn--secondary, .btn.secondary, .mini-btn, .ficha-swap.active, .swap-cancel {
+  color: var(--text); background: transparent; border: 1.5px solid var(--btn-outline);
+}
+/* Peligro */
+.ui-btn--danger, .btn.danger, .mini-btn.danger {
+  color: #fff; background: var(--btn-danger-bg); border: 1px solid #991b1b; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.16), 0 3px 0 #7f1d1d, 0 8px 16px rgba(220, 38, 38, 0.28);
+  margin-bottom: 3px;
+}
+
+/* Al presionar: se hunde (relieve) o se ilumina (contorno) */
+.ui-btn--primary:active:not(:disabled), .btn:not(.secondary):not(.danger):active:not(:disabled), .ficha-swap:not(.active):active:not(:disabled),
+.ui-btn--danger:active:not(:disabled), .btn.danger:active:not(:disabled), .mini-btn.danger:active:not(:disabled) {
+  transform: translateY(3px); filter: brightness(0.94);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 0 0 transparent;
+}
+.ui-btn--secondary:active:not(:disabled), .btn.secondary:active:not(:disabled), .mini-btn:not(.danger):active:not(:disabled),
+.ficha-swap.active:active:not(:disabled), .swap-cancel:active:not(:disabled) {
+  transform: translateY(1px); background: rgba(96, 165, 250, 0.18);
+}
+/* Solo con ratón: un poco más de brillo (en el móvil no hay "hover") */
+@media (hover: hover) {
+  .ui-btn--primary:hover:not(:disabled), .btn:not(.secondary):not(.danger):hover:not(:disabled), .ficha-swap:not(.active):hover:not(:disabled),
+  .ui-btn--danger:hover:not(:disabled), .btn.danger:hover:not(:disabled), .mini-btn.danger:hover:not(:disabled) { filter: brightness(1.1); }
+  .ui-btn--secondary:hover:not(:disabled), .btn.secondary:hover:not(:disabled), .mini-btn:not(.danger):hover:not(:disabled) { background: rgba(96, 165, 250, 0.12); }
+}
+
+/* Desactivado: plano, apagado y con borde discontinuo (se ve de lejos que no se puede tocar) */
+.ui-btn:disabled, .btn:disabled, .mini-btn:disabled, .ficha-swap:disabled, .swap-cancel:disabled {
+  cursor: not-allowed; transform: none !important; filter: none !important; opacity: 1 !important; margin-bottom: 0 !important;
+  color: #7685a6 !important; background: #18213a !important; border: 1.5px dashed #33436b !important;
+  box-shadow: none !important; text-shadow: none !important;
+}
+
+/* Pestañas y niveles: la opción activa usa el mismo degradado del botón principal */
+.tab, .level { min-height: 44px; border-radius: var(--btn-r); font-weight: 600; }
+.tab.active, .level.active {
+  color: #fff; background: var(--btn-primary-bg); border-color: #1d4fc4;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.tab:active, .level:active { transform: translateY(1px); }
+
+/* Botones del juego de Champions y torneo: mismo estilo que el resto (antes eran dorados) */
+.cl-actions .btn, .tn-actions .btn {
+  color: #fff; background: var(--btn-primary-bg);
+}
+.cl-actions .btn:hover:not(:disabled), .tn-actions .btn:hover:not(:disabled) { background: var(--btn-primary-bg); }
+.cl-actions .btn:disabled, .tn-actions .btn:disabled { background: #18213a; }
+
+/* ---------- 4. Escritorio: lo que solo existe en móvil no se ve ---------- */
+.topbar-menu { display: none; }
+
+/* ---------- Móvil y tableta pequeña (hasta 800 px) ---------- */
+@media (max-width: 800px) {
+
+  /* Zonas seguras: nada queda debajo del notch ni de la barra de gestos */
+  .content {
+    padding: 12px calc(10px + var(--safe-r)) calc(var(--nav-h) + var(--action-h) + var(--safe-b) + 16px) calc(10px + var(--safe-l));
+  }
+  .screen { padding-left: calc(14px + var(--safe-l)); padding-right: calc(14px + var(--safe-r)); }
+  body, #root, .app { min-height: 100vh; }
+  @supports (min-height: 100dvh) { body, #root, .app { min-height: 100dvh; } }
+
+  /* Barra superior: club + menú «Más» arriba, 4 datos en 2 columnas */
+  .topbar {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 16px;
+    padding: calc(8px + var(--safe-t)) calc(12px + var(--safe-r)) 10px calc(12px + var(--safe-l));
+  }
+  .topbar-club { grid-column: 1 / -1; font-size: 1.0625rem; min-height: 44px; }
+  .topbar-menu {
+    display: inline-flex; align-items: center; justify-content: center; margin-left: auto; flex: none;
+    width: 48px; height: 44px; border-radius: var(--btn-r); font-size: 1.35rem; line-height: 1; cursor: pointer;
+    color: var(--text); background: transparent; border: 1.5px solid var(--btn-outline);
+  }
+  .topbar-menu:active { background: rgba(96, 165, 250, 0.18); }
+  .stat { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; }
+  .stat span { text-transform: none; letter-spacing: 0; }
+  .stat strong { font-size: 1rem; max-width: none; }
+  .stat-link { min-height: 44px; margin: -6px 0; text-align: left; width: 100%; }
+
+  /* Navegación: la barra de arriba pasa a la barra inferior propia (MobileNav). Las subpestañas se quedan. */
+  .navbar-row { display: none !important; }
+  .navbar { background: transparent; }
+  .subnav { padding: 0 calc(6px + var(--safe-r)) 0 calc(6px + var(--safe-l)); }
+  .sub-item { min-height: 48px; padding: 0 14px; font-size: 0.9375rem; }
+  .subnav-dup { display: none; } /* Plantilla · Mercado · Cantera ya están en la barra inferior */
+
+  /* Barra inferior fija: 5 secciones */
+  .mobile-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    grid-template-columns: 1fr 1.05fr 1fr 1fr 1.35fr;
+    padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
+    background: var(--panel); border-top: 1px solid var(--border); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35);
+  }
+  .mnav-item {
+    position: relative; min-width: 0; min-height: var(--nav-h); padding: 6px 2px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px; cursor: pointer;
+    color: var(--muted); background: none; border: 0; font: inherit; font-size: 0.75rem; font-weight: 600; line-height: 1.1; white-space: nowrap;
+  }
+  .mnav-item svg { width: 24px; height: 24px; }
+  .mnav-item:active { background: rgba(96, 165, 250, 0.14); }
+  .mnav-item.active { color: #fff; }
+  .mnav-item.active svg { color: var(--accent-hover); }
+  .mnav-item.active::before { content: ''; position: absolute; top: 0; left: 24%; right: 24%; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+
+  /* Botón principal: fijo sobre la barra, siempre en el mismo lugar */
+  .action-bar {
+    position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + var(--safe-b)); z-index: 49;
+    padding: 12px calc(12px + var(--safe-r)) 8px calc(12px + var(--safe-l)); pointer-events: none;
+    background: linear-gradient(180deg, rgba(11, 18, 32, 0), rgba(11, 18, 32, 0.9) 40%, var(--bg));
+  }
+  .action-bar > * { pointer-events: auto; }
+  .action-note { margin: 6px 0 0; text-align: center; font-size: 0.875rem; color: var(--muted); }
+  /* Las pantallas de Champions y torneo traen su propio «Continuar»: se queda pegado en el mismo sitio */
+  .cl-actions, .tn-actions {
+    position: sticky; z-index: 48; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); padding: 10px 0 0;
+  }
+  .cl-actions .btn, .tn-actions .btn { min-height: 56px; font-size: 1.0625rem; }
+
+  /* Hoja «Más» */
+  .sheet-wrap { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; }
+  .sheet-backdrop { position: absolute; inset: 0; border: 0; padding: 0; background: rgba(2, 6, 16, 0.62); }
+  .sheet {
+    position: relative; width: 100%; max-height: 85vh; overflow-y: auto; overscroll-behavior: contain;
+    padding: 10px calc(14px + var(--safe-r)) calc(16px + var(--safe-b)) calc(14px + var(--safe-l));
+    background: var(--panel); border-top: 1px solid var(--btn-outline); border-radius: 20px 20px 0 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.55); animation: sheet-up 0.2s ease-out;
+  }
+  @supports (max-height: 85dvh) { .sheet { max-height: 85dvh; } }
+  .sheet-grip { width: 44px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: #3a4a73; }
+  .sheet-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .sheet-link {
+    width: 100%; min-height: 56px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+    color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 14px; font: inherit; text-align: left;
+  }
+  .sheet-link:active { background: rgba(96, 165, 250, 0.16); }
+  .sheet-ico { font-size: 1.4rem; width: 32px; text-align: center; flex: none; }
+  .sheet-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+  .sheet-txt strong { font-size: 1rem; }
+  .sheet-txt small { font-size: 0.875rem; color: var(--muted); }
+
+  /* Inicio: la pizarra sustituye a la tarjeta de clasificación; el botón «Ir a la parada» ya está abajo */
+  .dash .dash-clasif { display: none; }
+  .stop-card .btn.inline { margin-top: 12px; }
+  .continue-card > .btn { display: none; } /* el botón de continuar está en la barra inferior */
+
+  /* ---------- 5. Plantilla, campo y fichas ---------- */
+  /* Campo: retratos de 56-64 px, Val en insignia pequeña, nombre debajo */
+  .token { width: 76px; }
+  .token-badge { width: 60px; height: 60px; }
+  .token-val { right: -9px; bottom: -4px; min-width: 26px; padding: 0 6px; }
+  .token-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pitch-anime .token-name { padding: 1px 6px 2px; }
+  .token-delta { left: calc(50% + 20px); }
+
+  /* Ficha del jugador y cambio: por encima del botón principal */
+  .ficha:not(.ficha-empty) { z-index: 60; max-height: min(62vh, 520px); }
+  .swap-picker { z-index: 60; max-height: min(68vh, 560px); }
+  @supports (max-height: 62dvh) {
+    .ficha:not(.ficha-empty) { max-height: min(62dvh, 520px); }
+    .swap-picker { max-height: min(68dvh, 560px); }
+  }
+  .ficha-close { width: 44px; height: 44px; }
+  .ficha-swap { min-height: 48px; }
+  .swap-cancel { min-height: 44px; }
+
+  /* Plantilla: la lista corre con la página, no dentro de una caja con su propio scroll */
+  .squad-scroll { max-height: none; overflow: visible; border: 0; }
+  .squad-scroll .data-table th { position: static; }
+  .squad-table tbody tr { height: 52px; }
+  .market-check { min-height: 44px; }
+}
+
+/* Teléfonos estrechos (360 px): campo un poco más compacto, aún con retratos de 56 px */
+@media (max-width: 380px) {
+  .token { width: 68px; }
+  .token-badge { width: 56px; height: 56px; }
+  .pitch-anime .token-name { padding: 1px 3px 2px; }
+  .sq-grid { gap: 8px; }
+  .sq-card { padding: 6px 6px 8px; }
+  .sq-toggle button { padding: 0 9px; }
+}
+
+/* Teléfono en horizontal: barra y botón más bajos */
+@media (max-width: 800px) and (max-height: 480px) and (orientation: landscape) {
+  :root { --nav-h: 52px; --action-h: 64px; }
+  .mnav-item { flex-direction: row; gap: 6px; }
+  .ui-btn--lg { min-height: 48px; }
+}
+
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---------- 6. Movimiento reducido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ui-btn, .btn, .mini-btn, .ficha-swap, .swap-cancel, .tab, .level, .sq-card, .sq-chip, .mnav-item, .mb-open { transition: none !important; }
+  .ui-btn:active, .btn:active, .mini-btn:active, .ficha-swap:active, .swap-cancel:active, .tab:active, .level:active,
+  .sq-card:active, .sq-chip:active, .mb-open:active { transform: none !important; }
+  .sheet { animation: none; }
+}
+.low-fx .sheet { animation: none; }
+
+
+/* ---------- 3. Texto mínimo de 14 px en móvil ----------
+   Lista generada a partir de todos los font-size menores a 14 px del proyecto.
+   (Excepción deliberada: las etiquetas de la barra inferior, 12 px, para que quepa «Competiciones».) */
+@media (max-width: 800px) {
+  .notice-player-name span,
+  .notice-player-tags,
+  .notice-player-stats dt,
+  .notice-player-val small,
+  .cl-count,
+  .cl-pill,
+  .cl-card h3,
+  .cl-round,
+  .cl-label,
+  .cl-clock,
+  .cl-goal span,
+  .cl-extra,
+  .cl-tag,
+  .cl-min,
+  .cl-assist,
+  .cl-stat,
+  .cl-stat-mid,
+  .cl-player strong,
+  .cl details summary,
+  .cl-table,
+  .cl-table th,
+  .cl-legend,
+  .cl-team,
+  .dc-badge,
+  .dc-round,
+  .dc-result,
+  .squad-panel .tab,
+  .ficha-first,
+  .ficha-tags,
+  .ficha-rating small,
+  .ficha-pot-head,
+  .ficha-pot-foot,
+  .ficha-grid dt,
+  .ficha-hint,
+  .nat-code,
+  .card h2,
+  .shape,
+  .hint,
+  .stat span,
+  .step-dot,
+  .table th,
+  .kpi span,
+  .data-table th,
+  .pos,
+  .mini-btn,
+  .legend,
+  .result,
+  .token-name,
+  .delta,
+  .token-delta,
+  .section-title,
+  .tag,
+  .level,
+  .lg-trophy span,
+  .lg-timeline th,
+  .market-check,
+  .academy-info > div,
+  .stat strong,
+  .token-val,
+  .squad-scroll .data-table td,
+  .squad-scroll .data-table th,
+  .data-table.market-table td:nth-child(3):not([data-label]),
+  .data-table.market-table td[data-label]::before,
+  .blocker,
+  .tn-table,
+  .standings-table thead th,
+  .pos-badge,
+  .st-key-text strong,
+  .st-key-text small,
+  .club-name,
+  .calendar-table th,
+  .calendar-table td,
+  .swap-head span,
+  .swap-empty,
+  .swap-role,
+  .swap-stats small,
+  .tn-count,
+  .tn-pill,
+  .tn-card h3,
+  .tn-round,
+  .tn-extra,
+  .tn-tag,
+  .tn-min,
+  .tn-assist,
+  .tn-stat,
+  .tn-stat-mid,
+  .tn-player strong,
+  .tn-table th,
+  .vt-shelf-title,
+  .vt-more,
+  .vt-plate span,
+  .vt-plate em,
+  .vt-extra { font-size: 0.875rem; }
+  .token-val { font-size: 0.875rem; }
+}

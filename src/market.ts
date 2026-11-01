@@ -4,9 +4,11 @@ import type { LeagueState, Level, SimTeam } from './engine'
 import { USER_ID, getUserSquad } from './engine'
 import type { SimPlayer } from './players'
 import { marketValue, newSigning } from './players'
-import { MAX_SQUAD, FORMATION_COUNT, SQUAD_TEMPLATE, pickStarters, repairStarters, squadStrength } from './squads'
+import { MAX_SQUAD, FORMATION_COUNT, SQUAD_TEMPLATE, pickStarters, repairStarters, squadStrength, topStarCount } from './squads'
 import type { Position } from './sample'
 import { createRng, mixSeed, pickOne, shuffle } from './rng'
+import { GIANT_PREMIUM, askingPriceFor, fillLevel, leagueMean } from './aiclubs'
+import { MARKET, VAL_LIMITS } from './lifetimeConfig'
 import type { Rng } from './rng'
 
 /* ---------- Mercado de fichajes ---------- */
@@ -21,8 +23,7 @@ export const MIN_PER_POS: Record<Position, number> = {
   DEL: FORMATION_COUNT.DEL + 1,
 }
 
-const GIANT_PREMIUM = 1.3 // los gigantes piden más por sus jugadores
-const QUICK_SALE = 0.85 // venta directa: se cobra algo menos que el valor de mercado
+const QUICK_SALE = MARKET.quickSale // venta directa: se cobra algo menos que el valor de mercado
 const MAX_OFFERS = 3
 
 export interface MarketOffer {
@@ -40,6 +41,8 @@ export interface Listing {
   division: Level
   price: number
 }
+
+export { GIANT_PREMIUM }
 
 export function marketOpen(game: Pick<GameState, 'eventId' | 'baseStop'>): boolean {
   return game.eventId === null && MARKET_STOPS.includes(game.baseStop)
@@ -65,7 +68,7 @@ function rivals(league: LeagueState): { team: SimTeam; division: Level }[] {
 
 /* ---------- Comprar ---------- */
 export function askingPrice(p: SimPlayer, team: SimTeam): number {
-  return roundK(marketValue(p) * (team.anchor ? GIANT_PREMIUM : 1))
+  return askingPriceFor(p, team)
 }
 
 // Todos los jugadores de los clubes rivales con su precio
@@ -82,7 +85,11 @@ export function listMarket(league: LeagueState): Listing[] {
 // Devuelve el motivo por el que no se puede fichar, o null si se puede
 export function buyBlocker(game: GameState, budget: number, listing: Listing): string | null {
   if (!marketOpen(game)) return 'El mercado está cerrado'
-  if (getUserSquad(game.league).length >= MAX_SQUAD) return `Plantilla llena (${MAX_SQUAD})`
+  const mine = getUserSquad(game.league)
+  if (mine.length >= MAX_SQUAD) return `Plantilla llena (${MAX_SQUAD})`
+  if (listing.player.rating >= VAL_LIMITS.topStarRating && topStarCount(mine) >= VAL_LIMITS.maxTopStarsPerClub) {
+    return `Un club no puede tener más de ${VAL_LIMITS.maxTopStarsPerClub} jugadores de ${VAL_LIMITS.topStarRating}+`
+  }
   if (budget < listing.price) return 'No alcanza el presupuesto'
   if (!listMarket(game.league).some((l) => l.player.id === listing.player.id)) return 'Ya no está disponible'
   return null
@@ -108,14 +115,16 @@ function withSquad(team: SimTeam, squad: SimPlayer[]): SimTeam {
 export function buyPlayer(league: LeagueState, listing: Listing, seed: number): LeagueState {
   const { player, teamId } = listing
   const rng = createRng(mixSeed(seed, hash(player.id)))
+  const ref = leagueMean([...league.divisions[1].teams, ...league.divisions[2].teams])
   let moved: SimPlayer = { ...player, starter: false, starts: 0 }
 
   let next = replaceTeam(league, teamId, (t) => {
     const rest = t.squad.filter((p) => p.id !== player.id)
     if (rest.filter((p) => p.pos === player.pos).length < SQUAD_TEMPLATE[player.pos]) {
-      rest.push(newSigning(`t${t.id}-m${hash(player.id)}`, player.pos, t.level, rng))
+      rest.push(newSigning(`t${t.id}-m${hash(player.id)}`, player.pos, fillLevel(t, ref, 2), rng))
     }
-    return withSquad(t, rest)
+    // El club vendedor cobra el traspaso
+    return { ...withSquad(t, rest), budget: (t.budget ?? 0) + listing.price }
   })
 
   next = replaceTeam(next, USER_ID, (t) => {
@@ -140,7 +149,7 @@ export function sellBlocker(game: GameState, player: SimPlayer): string | null {
 }
 
 // El jugador pasa a otro club, que suelta a su peor jugador de esa posición si le sobra gente
-export function sellPlayer(league: LeagueState, playerId: string, teamId: number): LeagueState {
+export function sellPlayer(league: LeagueState, playerId: string, teamId: number, amount = 0): LeagueState {
   const player = getUserSquad(league).find((p) => p.id === playerId)
   if (!player) return league
 
@@ -159,7 +168,7 @@ export function sellPlayer(league: LeagueState, playerId: string, teamId: number
       if (!worst) break
       list.splice(list.indexOf(worst), 1)
     }
-    return withSquad(t, list)
+    return { ...withSquad(t, list), budget: (t.budget ?? 0) - amount }
   })
   return next
 }
@@ -168,7 +177,12 @@ export function sellPlayer(league: LeagueState, playerId: string, teamId: number
 export function quickBuyer(game: GameState, playerId: string): SimTeam {
   const all = rivals(game.league)
   const rng = createRng(mixSeed(game.seed, game.season, game.round, hash(playerId)))
-  return pickOne(all, rng).team
+  const player = getUserSquad(game.league).find((p) => p.id === playerId)
+  // Solo compran los clubes que pueden pagarlo (si ninguno puede, el más rico se queda con el jugador)
+  const price = player ? quickSalePrice(player) : 0
+  const rich = all.filter((r) => (r.team.budget ?? 0) >= price)
+  if (rich.length === 0) return [...all].sort((a, b) => (b.team.budget ?? 0) - (a.team.budget ?? 0))[0].team
+  return pickOne(rich, rng).team
 }
 
 /* ---------- Ofertas recibidas ---------- */
@@ -184,14 +198,17 @@ export function buildOffers(game: GameState, rng: Rng): MarketOffer[] {
   const offers: MarketOffer[] = []
   for (const p of candidates) {
     if (rng() < 0.25) continue
-    const { team } = pickOne(others, rng)
     const factor = 0.95 + rng() * 0.4
+    const amount = roundK(marketValue(p) * factor)
+    const buyers = others.filter((o) => (o.team.budget ?? 0) >= amount)
+    if (buyers.length === 0) continue
+    const { team } = pickOne(buyers, rng)
     offers.push({
       id: `${game.season}-${game.baseStop}-${p.id}`,
       playerId: p.id,
       teamId: team.id,
       teamName: team.name,
-      amount: roundK(marketValue(p) * factor),
+      amount,
     })
   }
   return offers

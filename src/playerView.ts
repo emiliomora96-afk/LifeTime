@@ -1,4 +1,5 @@
 import type { Phase } from './players'
+import { auraOf } from './aura'
 
 export const PHASES: Record<Phase, { label: string; cls: string }> = {
   crece: { label: '↗ Crece', cls: 'phase-up' },
@@ -18,10 +19,17 @@ export function gainClass(gain: number | undefined): string {
   return gain > 0 ? 'phase-up' : 'phase-down'
 }
 
-// Color de la valoración: dorado para estrellas, verde para muy buenos, azul para buenos
+// Cambio de valoración de la última temporada, al estilo FIFA: "+2" en verde o "-1" en rojo (nada si no cambió)
+export function deltaText(gain: number | undefined): string {
+  if (gain === undefined || gain === 0) return ''
+  return gain > 0 ? `+${gain}` : `-${Math.abs(gain)}`
+}
+
+export function deltaClass(gain: number | undefined): string {
+  return 'delta ' + (gain !== undefined && gain > 0 ? 'up' : 'down')
+}
+
+// Color de la valoración: el mismo que el del aura (tramos y colores en aura.ts)
 export function ratingColor(rating: number): string {
-  if (rating >= 85) return '#fbbf24'
-  if (rating >= 75) return '#22c55e'
-  if (rating >= 65) return '#60a5fa'
-  return '#94a3b8'
+  return auraOf(rating).color
 }

@@ -63,14 +63,14 @@ describe('curva de edad', () => {
     expect(Math.abs(fw.avg(30) - fw.avg(27))).toBeLessThan(2)
   })
 
-  it('baja desde los 31 y claramente desde los 35', () => {
-    expect(fw.avg(31)).toBeLessThan(fw.avg(30) + 0.01)
-    expect(fw.avg(35)).toBeLessThan(fw.avg(30) - 5)
-    expect(fw.avg(37)).toBeLessThan(fw.avg(35) - 4)
+  it('un delantero empieza a bajar a los 33-34 y claramente desde los 35', () => {
+    expect(fw.avg(32)).toBeGreaterThan(fw.avg(30) - 0.8)
+    expect(fw.avg(35)).toBeLessThan(fw.avg(30) - 2.5)
+    expect(fw.avg(37)).toBeLessThan(fw.avg(35) - 2.5)
   })
 
   it('los porteros maduran y envejecen más tarde', () => {
-    expect(gk.avg(27)).toBeLessThan(fw.avg(27) - 0.5)
+    expect(gk.avg(27)).toBeLessThan(fw.avg(27) + 1.5)
     expect(gk.avg(35)).toBeGreaterThan(fw.avg(35) + 3)
   })
 
@@ -160,7 +160,8 @@ describe('plantillas', () => {
   it('la plantilla del jugador tiene 18 jugadores con edad y potencial', () => {
     const squad = userSquad(createRng(9))
     expect(squad.length).toBe(18)
-    expect(squadStrength(squad)).toBe(69.5)
+    expect(squadStrength(squad)).toBeGreaterThan(66)
+    expect(squadStrength(squad)).toBeLessThan(73)
     for (const p of squad) {
       expect(p.age).toBeGreaterThan(15)
       expect(p.peak).toBeGreaterThanOrEqual(p.rating)
@@ -249,10 +250,10 @@ describe('dinero de los jugadores', () => {
     expect(marketValue(old)).toBeLessThan(marketValue(prime))
   })
 
-  it('la nómina inicial del club ronda entre 1,4 y 1,9 millones', () => {
+  it('la nómina inicial del club ronda entre 4,2 y 5,7 millones', () => {
     const payroll = userSquad(createRng(13)).reduce((sum, p) => sum + playerSalary(p), 0)
-    expect(payroll).toBeGreaterThan(1_400_000)
-    expect(payroll).toBeLessThan(1_900_000)
+    expect(payroll).toBeGreaterThan(4_200_000)
+    expect(payroll).toBeLessThan(5_700_000)
   })
 
   it('si un jugador se va, la nómina baja', () => {

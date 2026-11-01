@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import CreateClub from './CreateClub'
 import Sidebar from './Sidebar'
+import MobileNav from './MobileNav'
+import MoreSheet from './MoreSheet'
+import ActionBar from './ActionBar'
 import TopBar from './TopBar'
 import Dashboard from './Dashboard'
 import StopScreen from './StopScreen'
@@ -12,12 +15,14 @@ import Stats from './Stats'
 import { Board } from './Management'
 import Market from './MarketPage'
 import Academy from './AcademyPage'
+import LegacyScreen from './LegacyScreen'
 import type { Club } from './types'
 import type { SectionId } from './sections'
 import { MISSION_COST } from './config'
 import type { InvestArea, Notice, NoticeOption } from './config'
-import { SAVE_KEY } from './data'
-import { GAME_KEY, advance, initialGame, loadGame, saveGame } from './game'
+import { SAVE_KEY, START_BUDGET } from './data'
+import { DEFAULT_LEAGUE, isLeagueId } from './leagues'
+import { GAME_KEY, advance, hasCompatibleSave, initialGame, loadGame, saveGame } from './game'
 import type { GameState, ScoutOrder } from './game'
 import { addUserPlayer, getUserSquad, removeUserPlayer, setUserAutoLineup, swapUserStarters } from './engine'
 import type { Listing, MarketOffer } from './market'
@@ -26,6 +31,7 @@ import type { SimPlayer } from './players'
 import { MAX_SQUAD } from './squads'
 import type { Tactic } from './engine'
 import { seasonExpenses, seasonIncome, total } from './finance'
+import { europeFinalIncome } from './euroIncome'
 
 function loadClub(): Club | null {
   try {
@@ -45,14 +51,25 @@ function persistClub(club: Club): void {
 }
 
 export default function App() {
-  const [club, setClub] = useState<Club | null>(loadClub)
+  // Si la partida guardada es de una versión vieja (el mundo cambió), el club arranca de cero con su presupuesto inicial
+  const [club, setClub] = useState<Club | null>(() => {
+    const saved = loadClub()
+    return saved && !hasCompatibleSave() ? { ...saved, budget: START_BUDGET } : saved
+  })
   const [game, setGame] = useState<GameState>(loadGame)
   const [section, setSection] = useState<SectionId>('inicio')
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
 
+  // Autoguardado: partida y club se guardan juntos después de cada cambio
   useEffect(() => {
     saveGame(game)
-  }, [game])
+    if (club) persistClub(club)
+  }, [game, club])
+
+  // Al terminar la temporada 30 se abre el legado
+  useEffect(() => {
+    if (game.finished) setSection('legado')
+  }, [game.finished])
 
   function updateBudget(current: Club, delta: number) {
     const updated = { ...current, budget: current.budget + delta }
@@ -62,7 +79,7 @@ export default function App() {
 
   function handleCreate(newClub: Club) {
     persistClub(newClub)
-    setGame(initialGame())
+    setGame(initialGame(undefined, isLeagueId(newClub.leagueId) ? newClub.leagueId : DEFAULT_LEAGUE))
     setClub(newClub)
   }
 
@@ -75,13 +92,19 @@ export default function App() {
     }
     setGame(initialGame())
     setSection('inicio')
-    setMenuOpen(false)
     setClub(null)
+  }
+
+  function handleImport(importedClub: Club, importedGame: GameState) {
+    persistClub(importedClub)
+    saveGame(importedGame)
+    setClub(importedClub)
+    setGame(importedGame)
+    setSection('inicio')
   }
 
   function handleSelect(id: SectionId) {
     setSection(id)
-    setMenuOpen(false)
     window.scrollTo(0, 0)
   }
 
@@ -138,7 +161,7 @@ export default function App() {
     updateBudget(club, amount)
     setGame({
       ...game,
-      league: sellPlayer(game.league, player.id, teamId),
+      league: sellPlayer(game.league, player.id, teamId, amount),
       offers: game.offers.filter((o) => o.playerId !== player.id),
       leaving: game.leaving.filter((id) => id !== player.id),
     })
@@ -177,11 +200,19 @@ export default function App() {
       const net = total(seasonIncome(game)) - total(seasonExpenses(game))
       updateBudget(club, net)
     }
-    setGame(advance(game))
+    // Al terminar el torneo europeo se cobran las eliminatorias y el título (lo anterior ya entró con el balance del cierre)
+    if (club && game.eventId === 'torneo') {
+      const prize = total(europeFinalIncome(game))
+      if (prize > 0) updateBudget(club, prize)
+    }
+    // La táctica está oculta por ahora: siempre se juega 'equilibrada'
+    setGame(advance(game.tactic === 'equilibrada' ? game : { ...game, tactic: 'equilibrada' }))
     window.scrollTo(0, 0)
   }
 
   if (!club) return <CreateClub onCreate={handleCreate} />
+
+  const pendingNotices = game.notices.filter((n) => game.answers[n.id] === undefined).length
 
   function renderSection(c: Club) {
     switch (section) {
@@ -194,9 +225,8 @@ export default function App() {
             game={game}
             onAnswer={handleAnswer}
             onContinue={handleContinue}
-            onInvest={handleInvest}
-            onScout={handleScout}
             onTactic={handleTactic}
+            onGoTo={handleSelect}
           />
         )
       case 'equipo':
@@ -217,29 +247,37 @@ export default function App() {
           />
         )
       case 'cantera':
-        return <Academy game={game} onPromote={handlePromote} onRelease={handleRelease} />
+        return <Academy club={c} game={game} onPromote={handlePromote} onRelease={handleRelease} onScout={handleScout} />
       case 'finanzas':
         return <FinancesLive club={c} game={game} onInvest={handleInvest} />
       case 'directiva':
         return <Board club={c} />
       case 'estadisticas':
         return <Stats club={c} league={game.league} />
+      case 'legado':
+        return <LegacyScreen club={c} game={game} onImport={handleImport} onNewGame={handleReset} />
     }
   }
 
   return (
     <div className="app">
-      <Sidebar
-        current={section}
-        open={menuOpen}
-        onSelect={handleSelect}
-        onClose={() => setMenuOpen(false)}
-        onReset={handleReset}
-      />
       <div className="main">
-        <TopBar club={club} game={game} onMenu={() => setMenuOpen(true)} />
+        <div className="head">
+          <TopBar club={club} game={game} onBudget={() => handleSelect('finanzas')} onMenu={() => setMoreOpen(true)} />
+          <Sidebar current={section} onSelect={handleSelect} onReset={handleReset} />
+        </div>
         <main className="content">{renderSection(club)}</main>
       </div>
+      {/* Móvil: botón principal fijo sobre la barra inferior. En la Parada lo pone la propia pantalla (Simular/Continuar). */}
+      {section !== 'parada' && (
+        <ActionBar
+          icon="🚩"
+          label={game.finished ? 'Ver el legado' : pendingNotices > 0 ? `Ir a la parada (${pendingNotices})` : 'Ir a la parada'}
+          onClick={() => handleSelect(game.finished ? 'legado' : 'parada')}
+        />
+      )}
+      <MobileNav current={section} onSelect={handleSelect} />
+      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} onSelect={handleSelect} onReset={handleReset} />
     </div>
   )
 }

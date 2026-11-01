@@ -1,0 +1,11 @@
+/* Imágenes de los trofeos */
+.trophy-img { display: inline-block; vertical-align: middle; object-fit: contain; user-select: none; }
+
+/* Pantallas de celebración: la imagen va centrada; el rebote y el resplandor ya los pone el contenedor */
+.cl-trophy .trophy-img,
+.tn-trophy .trophy-img,
+.cup-show-trophy .trophy-img { display: block; margin: 0 auto; }
+
+/* Liga ganada, en el resumen de la temporada */
+.trophy-banner { display: flex; justify-content: center; margin: 2px 0 10px; }
+.trophy-banner .trophy-img { filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.55)); }

@@ -4,7 +4,6 @@ import { DIV1_CLUBS, DIV2_CLUBS } from './clubs'
 import { NATIONS, NAT_IDS, SPAIN_POOL, randomIdentity } from './nations'
 import { computeTable, createLeague, finishSeason, simulateLeague, TEAMS_PER_DIVISION } from './engine'
 import { nameParts, newSigning, newYouth } from './players'
-import { FORMATION_COUNT } from './squads'
 
 describe('nacionalidades', () => {
   it('cada país tiene nombres y apellidos suficientes y sin repetir', () => {
@@ -50,15 +49,14 @@ describe('nacionalidades', () => {
 })
 
 describe('clubes de España', () => {
-  it('hay 7 gigantes con un once completo 4-3-3 hecho a mano', () => {
-    const giants = DIV1_CLUBS.filter((c) => c.core)
+  it('hay 7 gigantes (3 élite y 4 grandes) y ninguno trae jugadores hechos a mano', () => {
+    const giants = DIV1_CLUBS.filter((c) => c.tier === 'elite' || c.tier === 'grande')
     expect(giants).toHaveLength(7)
-    for (const g of giants) {
-      expect(g.core).toHaveLength(11)
-      for (const pos of ['POR', 'DEF', 'MED', 'DEL'] as const) {
-        expect(g.core?.filter((p) => p.pos === pos).length).toBe(FORMATION_COUNT[pos])
-      }
-    }
+    expect(DIV1_CLUBS.filter((c) => c.tier === 'elite')).toHaveLength(3)
+    // Los jugadores son aleatorios: dos mundos con distinta semilla no comparten plantillas
+    const a = createLeague(1).divisions[1].teams[0].squad.map((p) => p.name).join()
+    const b = createLeague(2).divisions[1].teams[0].squad.map((p) => p.name).join()
+    expect(a).not.toBe(b)
   })
 
   it('1.ª tiene 20 clubes y 2.ª tiene 19 (el club del jugador es el 20), sin nombres repetidos', () => {
@@ -110,9 +108,9 @@ describe('clubes de España', () => {
     for (let i = 1; i < avg.length; i++) expect(avg[i - 1]).toBeGreaterThan(avg[i])
   })
 
-  it('los gigantes ganan más títulos, pero no siempre', () => {
+  it('los gigantes ganan más títulos que el resto, pero no siempre', () => {
+    let big = 0
     let elite = 0
-    let other = 0
     let seasons = 0
     for (let seed = 1; seed <= 6; seed++) {
       let league = createLeague(seed)
@@ -121,13 +119,15 @@ describe('clubes de España', () => {
         const table = computeTable(league.divisions[1])
         const champ = league.divisions[1].teams.find((t) => t.id === table[0].id)
         if (champ?.tier === 'elite') elite++
-        else other++
+        if (champ?.tier === 'elite' || champ?.tier === 'grande') big++
         seasons++
         league = finishSeason(league, seed * 1000 + y)
       }
     }
-    expect(elite / seasons).toBeGreaterThan(0.45) // 3 de 20 clubes ganarían ~15% si todo fuera igual
-    expect(other).toBeGreaterThan(seasons * 0.1) // y los demás también ganan
+    // 7 de 20 clubes ganarían ~35% si todo fuera igual; con más dinero y mejor cantera deben ganar bastante más
+    expect(big / seasons).toBeGreaterThan(0.45)
+    expect(elite / seasons).toBeGreaterThan(0.2)
+    expect(seasons - big).toBeGreaterThan(seasons * 0.15) // y los demás también ganan
   })
 
   it('un gigante que desciende sigue siendo fuerte y puede volver', () => {
@@ -137,8 +137,9 @@ describe('clubes de España', () => {
       league = finishSeason(league, 90 + y)
     }
     const all = [...league.divisions[1].teams, ...league.divisions[2].teams]
-    const giants = all.filter((t) => t.anchor !== undefined)
+    const giants = all.filter((t) => t.tier === 'elite' || t.tier === 'grande')
     expect(giants).toHaveLength(7)
-    for (const g of giants) expect(g.strength).toBeGreaterThan(70)
+    // Con el dinero y la cantera que conservan, ningún gigante se hunde
+    for (const g of giants) expect(g.strength).toBeGreaterThan(66)
   })
 })

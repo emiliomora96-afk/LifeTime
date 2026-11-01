@@ -61,6 +61,7 @@ function injuryNotice(game: GameState, squad: SimPlayer[], used: Set<string>, rn
     title: `${p.name} se lesionó`,
     text: `${describe(p)}. Estará fuera unas ${rounds} jornadas. ¿Quién lo sustituye?`,
     required: true,
+    player: p,
     options,
   }
 }
@@ -77,6 +78,7 @@ function contractNotices(game: GameState, squad: SimPlayer[], used: Set<string>,
       title: `${p.name}: su contrato termina esta temporada`,
       text: `${describe(p)}. Decide ahora si se queda o se va cuando acabe la temporada.`,
       required: true,
+      player: p,
       options: [
         {
           id: 'renovar',
@@ -108,6 +110,7 @@ function leaveNotice(game: GameState, squad: SimPlayer[], used: Set<string>, rng
     title: `${p.name} quiere irse del club`,
     text: `${describe(p)}. Dice que busca un nuevo reto.`,
     required: true,
+    player: p,
     options: [
       {
         id: 'convencer',
@@ -161,6 +164,7 @@ function scoutNotice(game: GameState, rng: () => number): Notice | null {
     title: `Los ojeadores encontraron a ${target.name}`,
     text: `${describe(target)}. Su club pide ${formatMoney(price)}.`,
     required: false,
+    player: target,
     options: [
       {
         id: 'fichar',
@@ -187,6 +191,7 @@ function recordOfferNotices(game: GameState, squad: SimPlayer[]): Notice[] {
       title: `Oferta récord por ${best.name}`,
       text: `${describe(best)}. Un club grande ofrece ${formatMoney(offer)}.`,
       required: true,
+      player: best,
       options: [
         {
           id: 'aceptar',

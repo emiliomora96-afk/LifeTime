@@ -1,0 +1,73 @@
+/* ---------- Copas nacionales: animación de títulos (1 segundo cada una) ---------- */
+.cup-show {
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; place-items: center; cursor: pointer;
+  background: radial-gradient(90% 70% at 50% 45%, rgba(251, 191, 36, 0.16) 0%, rgba(5, 9, 20, 0.88) 70%);
+  backdrop-filter: blur(3px);
+}
+.cup-show-item {
+  --cup-glow: #fbbf24;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+  animation: cup-in 1s ease both;
+}
+.cup-show-item[data-cup='supercopa'] { --cup-glow: #38bdf8; }
+.cup-show-trophy {
+  position: relative; font-size: 7.5rem; line-height: 1;
+  filter: drop-shadow(0 0 22px var(--cup-glow));
+}
+.cup-show-trophy::after {
+  content: ''; position: absolute; inset: -30%; z-index: -1; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cup-glow) 55%, transparent) 0%, transparent 65%);
+  animation: cup-glow 1s ease-out both;
+}
+.cup-show-name { font-size: 1.7rem; font-weight: 800; letter-spacing: 0.03em; color: var(--cup-glow); text-shadow: 0 0 18px color-mix(in srgb, var(--cup-glow) 60%, transparent); }
+.cup-show-sub { font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.75); }
+
+@keyframes cup-in {
+  0% { opacity: 0; transform: translateY(34px) scale(0.35) rotate(-6deg); }
+  24% { opacity: 1; transform: translateY(0) scale(1.14) rotate(2deg); }
+  38% { transform: scale(1) rotate(0deg); }
+  84% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+@keyframes cup-glow {
+  0% { opacity: 0; transform: scale(0.4); }
+  40% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.35; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cup-show-item { animation: cup-fade 1s ease both; }
+  .cup-show-trophy::after { animation: none; }
+  @keyframes cup-fade { 0% { opacity: 0; } 20% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+}
+
+/* ---------- Copas nacionales: resumen ---------- */
+.dc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dc-gap { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+.dc-line { margin: 6px 0 10px; }
+.dc-badge {
+  font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.dc-badge.gold { color: #111827; background: #fbbf24; border-color: #fbbf24; }
+.dc-badge.silver { color: #0f172a; background: #cbd5e1; border-color: #cbd5e1; }
+.dc-ties { list-style: none; margin: 0; padding: 0; }
+.dc-tie {
+  display: grid; grid-template-columns: 128px 1fr auto; align-items: center; gap: 10px;
+  padding: 8px 0; border-top: 1px solid var(--border); font-size: 0.9rem;
+}
+.dc-tie:first-child { border-top: none; }
+.dc-round { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.dc-me { font-weight: 800; }
+.dc-result { font-size: 0.78rem; font-weight: 700; }
+.dc-result.win { color: #22c55e; }
+.dc-result.loss { color: #ef4444; }
+.dc-list { margin-top: 4px; }
+.dc-reason { margin: 0; }
+.dc-money { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.dc-money li:first-child { border-top: none; padding-top: 0; }
+.dc-income { color: #22c55e; }
+@media (max-width: 560px) {
+  .dc-tie { grid-template-columns: 1fr auto; }
+  .dc-round { grid-column: 1 / -1; }
+}

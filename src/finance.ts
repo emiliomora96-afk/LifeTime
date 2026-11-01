@@ -3,6 +3,8 @@ import type { InvestArea } from './config'
 import { ROUNDS, getUserSquad, userPosition } from './engine'
 import type { GameState } from './game'
 import { playerSalary } from './players'
+import { cupIncome } from './domestic'
+import { europeIncome } from './euroIncome'
 import {
   LEAGUE_TITLE_PRIZE,
   OTHER_INCOME,
@@ -36,6 +38,12 @@ export function seasonIncome(game: GameState): Line[] {
   if (finished && position === 1) {
     lines.push({ label: 'Premio por título de liga', amount: LEAGUE_TITLE_PRIZE[level] })
   }
+  // Copa del Rey y Supercopa: se simulan al llegar al cierre, así que solo hay premios desde entonces
+  if (game.domestic && game.domestic.season === game.season) {
+    lines.push(...cupIncome(game.domestic, level))
+  }
+  // Europa: lo que ya se jugó (clasificación y fase de liga al cierre; el resto, al terminar el torneo europeo)
+  lines.push(...europeIncome(game).map(({ label, amount }) => ({ label, amount })))
   return lines
 }
 

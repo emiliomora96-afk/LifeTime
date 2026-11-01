@@ -1,0 +1,86 @@
+/* ---------- Tabla de posiciones ---------- */
+.standings-table { min-width: 480px; border-collapse: separate; border-spacing: 0; }
+.standings-table thead th { padding: 9px 8px; font-size: 0.68rem; letter-spacing: 0.06em; background: rgba(255, 255, 255, 0.03); border-bottom: 2px solid var(--border); }
+.standings-table thead th:first-child { border-top-left-radius: 8px; }
+.standings-table thead th:last-child { border-top-right-radius: 8px; }
+.standings-table tbody td { padding: 7px 8px; border-top: 1px solid rgba(34, 48, 82, 0.7); }
+.standings-table tbody tr { transition: background 0.15s; }
+.standings-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.018); }
+.standings-table tbody tr:hover td { background: rgba(59, 130, 246, 0.09); }
+
+/* Barra de color a la izquierda según la zona */
+.standings-table td.st-pos, .standings-table th.st-pos { position: relative; width: 52px; padding-left: 14px; text-align: left; }
+.standings-table tr[data-zone] td.st-pos::before {
+  content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 0 4px 4px 0;
+  background: var(--zone); box-shadow: 0 0 10px var(--zone);
+}
+.pos-badge { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 4px; border-radius: 8px; font-weight: 800; font-size: 0.82rem; color: var(--muted); }
+tr[data-zone] .pos-badge {
+  color: var(--zone); background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--zone) 20%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid color-mix(in srgb, var(--zone) 55%, transparent);
+}
+
+/* Club: escudo + nombre + mini copa de la competición */
+.club-cell { display: inline-flex; align-items: center; gap: 10px; }
+.club-cell svg { flex: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+.club-name { font-weight: 600; }
+.club-trophy { display: inline-flex; align-items: center; opacity: 0.95; }
+.club-trophy .trophy-img { filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.35)); }
+
+/* Números */
+.standings-table .dg.pos { color: #4ade80; }
+.standings-table .dg.neg { color: #f87171; }
+.standings-table .dg { color: var(--muted); }
+.standings-table th.st-pts-h { color: var(--text); }
+.standings-table td.st-pts { font-size: 1rem; background: rgba(255, 255, 255, 0.05) !important; }
+.standings-table td.st-pts strong { font-weight: 800; }
+
+/* Tu club */
+.standings-table tr.me td { background: rgba(59, 130, 246, 0.16) !important; font-weight: 700; }
+.standings-table tr.me td:first-child { box-shadow: none; }
+.standings-table tr.me .club-name { color: #fff; }
+.standings-table tr.me td { border-top-color: rgba(96, 165, 250, 0.45); border-bottom: 1px solid rgba(96, 165, 250, 0.45); }
+
+/* Leyenda con mini copas */
+.st-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-top: 16px; }
+.st-key {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-left: 4px solid var(--zone);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.18);
+}
+.st-key-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: none; color: var(--zone); font-size: 1.1rem; }
+.st-key-icon b { font-weight: 800; }
+.st-key-icon .trophy-img { filter: drop-shadow(0 0 8px var(--zone)); }
+.st-key-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.st-key-text strong { font-size: 0.86rem; }
+.st-key-text small { color: var(--muted); font-size: 0.74rem; }
+
+/* En pantalla grande: G / P y sin la segunda columna PJ; en móvil: V / D y PJ al final */
+.standings-table .show-sm, .standings-table .lbl-sm { display: none; }
+
+@media (max-width: 800px) {
+  .standings-table { min-width: 0; width: 100%; }
+  .standings-table .hide-sm, .standings-table .lbl-lg { display: none; }
+  .standings-table .show-sm { display: table-cell; color: var(--muted); }
+  .standings-table .lbl-sm { display: inline; }
+  .standings-table thead th { font-size: 0.64rem; letter-spacing: 0.02em; }
+  .standings-table td.num, .standings-table th.num { text-align: center; padding-left: 3px; padding-right: 3px; }
+  .standings-table td.st-pts { font-size: 0.95rem; }
+  .club-name { white-space: normal; line-height: 1.15; font-size: 0.86rem; }
+  .standings-table td:nth-child(2) { white-space: normal; width: 100%; }
+  .st-legend { grid-template-columns: 1fr; }
+  .standings-table tbody td, .standings-table thead th { padding: 7px 5px; }
+  .standings-table td.st-pos, .standings-table th.st-pos { width: 44px; padding-left: 12px; }
+  .club-cell { gap: 7px; }
+  .club-trophy { display: none; }
+}
+
+/* ---------- Calendario en móvil ---------- */
+@media (max-width: 800px) {
+  .calendar-table { min-width: 0; width: 100%; }
+  .calendar-table th, .calendar-table td { padding: 8px 4px; font-size: 0.8rem; }
+  .calendar-table td:nth-child(2), .calendar-table td:nth-child(4) { white-space: normal; line-height: 1.15; }
+  .calendar-table th:first-child, .calendar-table td:first-child { width: 34px; }
+}

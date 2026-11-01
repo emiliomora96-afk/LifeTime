@@ -1,22 +1,41 @@
 /* ---------- Ficha del jugador ---------- */
-.lineup-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
-@media (max-width: 1000px) { .lineup-body { grid-template-columns: 1fr; } }
+.lineup-body { display: grid; grid-template-columns: 380px 380px minmax(420px, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 1350px) {
+  .lineup-body { grid-template-columns: 380px 380px; justify-content: center; }
+  .squad-panel { grid-column: 1 / -1; }
+}
+@media (max-width: 1000px) { .lineup-body { grid-template-columns: minmax(0, 380px); } }
+
+/* Plantilla completa, al lado de la ficha */
+.squad-panel { min-width: 0; display: flex; flex-direction: column; }
+.squad-panel h3 { margin: 0 0 10px; font-size: 1rem; }
+.squad-panel .tabs { margin-bottom: 10px; gap: 6px; }
+.squad-panel .tab { padding: 5px 10px; font-size: 0.8rem; }
+.squad-scroll { max-height: 475px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; }
+.squad-scroll .data-table { min-width: 0; }
+.squad-scroll .data-table th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.squad-scroll .data-table td, .squad-scroll .data-table th { padding: 7px 8px; }
 
 .ficha { position: relative; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
-.ficha-empty { align-items: center; justify-content: center; text-align: center; color: var(--muted); min-height: 220px; font-size: 0.9rem; }
+.ficha-empty { align-items: center; justify-content: center; text-align: center; color: var(--muted); min-height: 475px; font-size: 0.9rem; }
 .ficha-empty-icon { font-size: 2.2rem; opacity: 0.6; }
 .ficha-empty p { margin: 0; max-width: 220px; }
 
 .ficha-close { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; line-height: 1; }
 .ficha-close:hover { color: var(--text); border-color: var(--accent); }
 
-.ficha-top { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; padding-right: 28px; }
-.ficha-photo { width: 64px; height: 64px; display: block; }
+.ficha-top { display: grid; grid-template-columns: 120px 1fr; grid-template-areas: 'photo id' 'photo rating'; gap: 8px 16px; align-items: center; padding-right: 28px; }
+.ficha-top .ficha-photo { grid-area: photo; }
+.ficha-top .ficha-id { grid-area: id; align-self: end; }
+.ficha-top .ficha-rating { grid-area: rating; align-self: start; }
+.ficha-photo { width: 120px; height: 120px; display: block; }
 .ficha-id { display: flex; flex-direction: column; min-width: 0; }
 .ficha-first { font-size: 0.85rem; color: var(--muted); }
 .ficha-last { font-size: 1.25rem; line-height: 1.15; overflow-wrap: anywhere; }
 .ficha-tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
 .ficha-rating { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 58px; height: 58px; border: 3px solid; border-radius: 50%; font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.ficha-rating { position: relative; }
+.ficha-rating .delta { position: absolute; top: -10px; right: -18px; margin: 0; }
 .ficha-rating small { font-size: 0.55rem; font-weight: 600; letter-spacing: 0.08em; margin-top: 2px; color: var(--muted); }
 
 .ficha-pot { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }

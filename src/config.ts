@@ -1,4 +1,5 @@
 import type { SimPlayer } from './players'
+import { ACADEMY_COSTS } from './lifetimeConfig'
 
 export const ROUNDS_PER_SEASON = 38
 export const TOTAL_SEASONS = 30
@@ -20,7 +21,7 @@ export const BASE_STOPS: BaseStop[] = [
     id: 'verano',
     name: 'Verano',
     when: 'Antes de empezar la temporada',
-    actions: 'Táctica, inversiones, ojeadores, cantera y mercado',
+    actions: 'Avisos, cantera, ojeadores y mercado',
     duration: '60 a 90 s',
     round: 0,
   },
@@ -28,7 +29,7 @@ export const BASE_STOPS: BaseStop[] = [
     id: 'invierno',
     name: 'Invierno',
     when: 'A mitad de temporada',
-    actions: 'Táctica, lesiones, contratos, mercado y ajustes de plantilla',
+    actions: 'Avisos, lesiones, contratos, mercado y ajustes de plantilla',
     duration: '15 a 25 s',
     round: ROUNDS_PER_SEASON / 2,
   },
@@ -62,6 +63,7 @@ export interface Notice {
   title: string
   text: string
   required: boolean // si es true, no se puede continuar sin responder
+  player?: SimPlayer // el jugador del que trata el aviso: se muestra su ficha en la tarjeta
   options: NoticeOption[]
 }
 
@@ -76,6 +78,17 @@ export interface EventStop {
 }
 
 export const EVENT_STOPS: EventStop[] = [
+  {
+    // Lifetime Champions League: la fase de liga completa se juega al salir de la parada de inicio.
+    // Solo aparece si tu club participa. En invierno no hay Champions (es el mercado); las eliminatorias van en 'torneo'.
+    id: 'champions-liga',
+    name: 'Champions · Fase de liga',
+    icon: '⭐',
+    afterStop: 'verano',
+    chance: 1,
+    intro: 'Arranca la Lifetime Champions League: ocho partidos para entrar entre los 24 mejores.',
+    notices: [],
+  },
   {
     id: 'oferta-record',
     name: 'Oferta récord',
@@ -93,11 +106,22 @@ export const EVENT_STOPS: EventStop[] = [
         text: 'Un club grande ofrece 1.500.000 € por tu mejor jugador.',
         required: true,
         options: [
-          { id: 'aceptar', label: 'Aceptar la oferta', detail: 'Vendes y refuerzas las arcas', budget: 1_500_000 },
+          { id: 'aceptar', label: 'Aceptar la oferta', detail: 'Vendes y refuerzas las arcas', budget: 4_500_000 },
           { id: 'rechazar', label: 'Rechazar', detail: 'Tu estrella se queda' },
         ],
       },
     ],
+  },
+  {
+    // Paso 9: se juega justo antes de concluir la temporada. Solo aparece si hay torneo europeo ese año.
+    // Sus partidos los calcula el motor al entrar (tournament.ts); la pantalla solo los presenta.
+    id: 'torneo',
+    name: 'Torneo europeo',
+    icon: '🏆',
+    afterStop: 'cierre',
+    chance: 1,
+    intro: 'Se disputa la competición europea de la temporada.',
+    notices: [],
   },
   {
     id: 'gala',
@@ -115,7 +139,7 @@ export const EVENT_STOPS: EventStop[] = [
         text: 'La liga entrega los premios de la temporada. ¿Celebras con la afición?',
         required: false,
         options: [
-          { id: 'fiesta', label: 'Celebrar con la afición', detail: 'Gasto único', budget: -50_000 },
+          { id: 'fiesta', label: 'Celebrar con la afición', detail: 'Gasto único', budget: -150_000 },
           { id: 'sencilla', label: 'Gala sencilla', detail: 'Sin gastos extra' },
         ],
       },
@@ -136,22 +160,22 @@ export const INVESTMENTS: Record<
     label: 'Ojeadores',
     icon: '🔭',
     effect: 'Más probabilidad de encontrar al jugador que pides.',
-    costs: [0, 100_000, 250_000, 500_000],
+    costs: [0, 300_000, 750_000, 1_500_000],
   },
   academy: {
     label: 'Cantera',
     icon: '🌱',
-    effect: 'Juveniles con más potencial y más juveniles destacados cada año.',
-    costs: [100_000, 250_000, 500_000, 900_000],
+    effect: 'Canteranos con más potencial y más canteranos nuevos cada año.',
+    costs: ACADEMY_COSTS, // costo anual real de cada nivel: se ajusta en lifetimeConfig.ts
   },
   stadium: {
     label: 'Mantenimiento del estadio',
     icon: '🏟️',
     effect: 'Más ingresos por entradas.',
-    costs: [100_000, 250_000, 400_000, 700_000],
+    costs: [300_000, 750_000, 1_200_000, 2_100_000],
   },
 }
 
 export const START_INVESTMENTS: Record<InvestArea, number> = { scouts: 1, academy: 1, stadium: 1 }
 
-export const MISSION_COST = 60_000 // costo de enviar a los ojeadores
+export const MISSION_COST = 180_000 // costo de enviar a los ojeadores

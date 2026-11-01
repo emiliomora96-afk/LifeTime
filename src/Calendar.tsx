@@ -47,7 +47,7 @@ export default function Calendar({ club, league }: { club: Club; league: LeagueS
           </p>
         ) : (
           <div className="table-scroll">
-            <table className="data-table">
+            <table className="data-table calendar-table">
               <thead>
                 <tr>
                   <th>Jor.</th>

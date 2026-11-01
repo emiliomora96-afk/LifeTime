@@ -1,4 +1,6 @@
 import './market.css'
+import PlayerChip from './PlayerChip'
+import LeagueNewsCard from './LeagueNews'
 import { useMemo, useState } from 'react'
 import PageHead from './PageHead'
 import type { Club } from './types'
@@ -73,6 +75,8 @@ export default function Market({ club, game, onBuy, onSell, onAcceptOffer, onRej
           : 'Mercado cerrado. Vuelve a la parada de Verano o de Invierno para fichar y vender.'}
       </div>
 
+      <LeagueNewsCard game={game} />
+
       {game.offers.length > 0 && open ? (
         <div className="card">
           <h2>Ofertas recibidas</h2>
@@ -99,7 +103,7 @@ export default function Market({ club, game, onBuy, onSell, onAcceptOffer, onRej
                     >
                       {confirm === 'o' + o.id ? '¿Confirmar?' : 'Aceptar'}
                     </button>
-                    <button type="button" className="mini-btn" onClick={() => onRejectOffer(o)}>
+                    <button type="button" className="mini-btn danger" onClick={() => onRejectOffer(o)}>
                       Rechazar
                     </button>
                   </div>
@@ -152,27 +156,34 @@ export default function Market({ club, game, onBuy, onSell, onAcceptOffer, onRej
                       <span className="pos">{l.player.pos}</span>
                     </td>
                     <td>
-                      {l.player.name}
-                      {l.player.nat ? <span className="nat-code"> {l.player.nat}</span> : null}
+                      <span className="name-cell">
+                        <PlayerChip player={l.player} />
+                        <span>
+                          {l.player.name}
+                          {l.player.nat ? <span className="nat-code"> {l.player.nat}</span> : null}
+                        </span>
+                      </span>
                     </td>
                     <td>
                       {l.teamName}
                       <span className="nat-code"> {l.division}.ª</span>
                     </td>
-                    <td className="num">{l.player.age}</td>
-                    <td className="num">{l.player.rating}</td>
-                    <td className="num">{potentialLabel(l.player)}</td>
-                    <td className="num">{formatMoney(l.price)}</td>
+                    <td className="num" data-label="Edad">{l.player.age}</td>
+                    <td className="num" data-label="Val.">{l.player.rating}</td>
+                    <td className="num" data-label="Potencial">{potentialLabel(l.player)}</td>
+                    <td className="num" data-label="Precio">{formatMoney(l.price)}</td>
                     <td className="num">
                       <button
                         type="button"
                         className="mini-btn"
+                        data-haptic="confirm"
                         disabled={blocker !== null}
                         title={blocker ?? undefined}
                         onClick={() => ask(key, () => onBuy(l))}
                       >
                         {confirm === key ? '¿Confirmar?' : 'Fichar'}
                       </button>
+                      {blocker ? <small className="blocker">{blocker}</small> : null}
                     </td>
                   </tr>
                 )
@@ -218,22 +229,28 @@ export default function Market({ club, game, onBuy, onSell, onAcceptOffer, onRej
                     <td>
                       <span className="pos">{p.pos}</span>
                     </td>
-                    <td>{nameParts(p).first + ' ' + nameParts(p).last}</td>
-                    <td className="num">{p.age}</td>
-                    <td className="num">{p.rating}</td>
-                    <td className="num">{potentialLabel(p)}</td>
-                    <td>{p.starter ? 'Titular' : 'Suplente'}</td>
-                    <td className="num">{formatMoney(quickSalePrice(p))}</td>
+                    <td>
+                      <span className="name-cell">
+                        <PlayerChip player={p} />
+                        <span>{nameParts(p).first + ' ' + nameParts(p).last}</span>
+                      </span>
+                    </td>
+                    <td className="num" data-label="Edad">{p.age}</td>
+                    <td className="num" data-label="Val.">{p.rating}</td>
+                    <td className="num" data-label="Potencial">{potentialLabel(p)}</td>
+                    <td data-label="Rol">{p.starter ? 'Titular' : 'Suplente'}</td>
+                    <td className="num" data-label="Venta directa">{formatMoney(quickSalePrice(p))}</td>
                     <td className="num">
                       <button
                         type="button"
-                        className="mini-btn"
+                        className="mini-btn danger"
                         disabled={blocker !== null}
                         title={blocker ?? undefined}
                         onClick={() => ask(key, () => onSell(p))}
                       >
                         {confirm === key ? '¿Confirmar?' : 'Vender'}
                       </button>
+                      {blocker ? <small className="blocker">{blocker}</small> : null}
                     </td>
                   </tr>
                 )

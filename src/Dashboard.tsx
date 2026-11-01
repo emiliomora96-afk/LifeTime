@@ -5,6 +5,9 @@ import type { GameState } from './game'
 import { BASE_STOPS, EVENT_STOPS, ROUNDS_PER_SEASON } from './config'
 import { OBJECTIVE, buildInbox } from './mock'
 import { getTable } from './season'
+import { europeInfo } from './europe'
+import MiniBoard from './MiniBoard'
+import ErrorBoundary from './ErrorBoundary'
 
 interface Props {
   club: Club
@@ -56,12 +59,20 @@ export default function Dashboard({ club, game, onGoTo }: Props) {
             : `Avisos pendientes: ${unanswered.length}` +
               (requiredLeft > 0 ? ` (${requiredLeft} requieren decisión)` : '')}
         </p>
-        <button type="button" className="btn inline" onClick={() => onGoTo('parada')}>
+        {game.europe?.user && game.europe.season === game.season && (
+          <p>
+            <strong>Europa:</strong> {europeInfo(game.europe.user).icon} {europeInfo(game.europe.user).name} esta temporada.
+          </p>
+        )}
+        <ErrorBoundary name="la pizarra" fallback={null}>
+          <MiniBoard club={club} league={game.league} onOpenTable={() => onGoTo('tabla')} />
+        </ErrorBoundary>
+        <button type="button" className="btn inline only-desktop" onClick={() => onGoTo('parada')}>
           Ir a la parada →
         </button>
       </section>
 
-      <section className="card">
+      <section className="card dash-clasif">
         <h2>Clasificación · {level}.ª división</h2>
         <table className="table">
           <thead>

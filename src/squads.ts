@@ -1,19 +1,17 @@
 import type { Position } from './sample'
-import { STARTERS, SUBS } from './sample'
 import type { Rng } from './rng'
 import { clamp, normal } from './rng'
 import type { NatPool } from './nations'
-import { GIANT_POOL, SPAIN_POOL, randomIdentity } from './nations'
-import type { CorePlayer } from './clubs'
+import { randomIdentity } from './nations'
+import { homePool } from './activeLeague'
+import { AI_MARKET, START, VAL_LIMITS } from './lifetimeConfig'
 import type { SimPlayer } from './players'
 import {
   createPlayer,
   newSigning,
   newYouth,
-  playerFromRating,
   PRODIGY_CHANCE,
   progressPlayer,
-  nameParts,
   retireChance,
   rollProdigy,
 } from './players'
@@ -70,6 +68,19 @@ export function repairStarters(squad: SimPlayer[]): SimPlayer[] {
   return squad.map((p) => ({ ...p, starter: chosen.has(p.id) }))
 }
 
+// Máximo de superestrellas (Val 95+) por club: las que sobran se quedan en 94. No hay tope por categoría de club.
+export function limitTopStars(squad: SimPlayer[]): SimPlayer[] {
+  const top = squad.filter((p) => p.rating >= VAL_LIMITS.topStarRating).sort(byRating)
+  if (top.length <= VAL_LIMITS.maxTopStarsPerClub) return squad
+  const demoted = new Set(top.slice(VAL_LIMITS.maxTopStarsPerClub).map((p) => p.id))
+  const cap = VAL_LIMITS.topStarRating - 1
+  return squad.map((p) => (demoted.has(p.id) ? { ...p, rating: cap, peak: Math.min(p.peak, cap) } : p))
+}
+
+export function topStarCount(squad: SimPlayer[]): number {
+  return squad.filter((p) => p.rating >= VAL_LIMITS.topStarRating).length
+}
+
 // Nivel del equipo: promedio de valoración del once inicial
 export function squadStrength(squad: SimPlayer[]): number {
   const starters = squad.filter((p) => p.starter)
@@ -78,7 +89,13 @@ export function squadStrength(squad: SimPlayer[]): number {
 }
 
 // Plantilla generada para un club rival, ajustada a su nivel
-export function placeholderSquad(teamId: number, level: number, rng: Rng, pool: NatPool = SPAIN_POOL): SimPlayer[] {
+export function placeholderSquad(
+  teamId: number,
+  level: number,
+  rng: Rng,
+  pool: NatPool = homePool(),
+  idPrefix: string = `t${teamId}`,
+): SimPlayer[] {
   const players: SimPlayer[] = []
   let n = 0
   for (const pos of POSITION_ORDER) {
@@ -88,13 +105,13 @@ export function placeholderSquad(teamId: number, level: number, rng: Rng, pool: 
         ? clamp(Math.round(27 + normal(rng) * 3.5), 20, 35)
         : clamp(Math.round(23.5 + normal(rng) * 4.5), 17, 34)
       const peak = clamp(
-        Math.round(main ? level + 2.5 + normal(rng) * 3 : level - 4 + normal(rng) * 3.5),
+        Math.round(main ? level + 2.5 + normal(rng) * START.starterSpread : level - 4 + normal(rng) * 3.5),
         55,
-        97,
+        98,
       )
       const prodigy = rollProdigy(age, PRODIGY_CHANCE.squad, rng)
       const who = randomIdentity(rng, pool)
-      players.push(createPlayer({ id: `t${teamId}-${n++}`, ...who, pos, age, peak, starter: false, prodigy }, rng))
+      players.push(createPlayer({ id: `${idPrefix}-${n++}`, ...who, pos, age, peak, starter: false, prodigy }, rng))
     }
   }
 
@@ -102,47 +119,21 @@ export function placeholderSquad(teamId: number, level: number, rng: Rng, pool: 
   const picked = pickStarters(players)
   const delta = Math.round(level - squadStrength(picked))
   return pickStarters(
-    picked.map((p) => {
-      const rating = clamp(p.rating + delta, 35, 99)
-      return { ...p, rating, peak: Math.max(rating, clamp(p.peak + delta, 55, 99)) }
-    }),
-  )
-}
-
-// Plantilla de un gigante: el once está hecho a mano y los 7 suplentes se generan a su nivel
-export function giantSquad(teamId: number, coreXI: CorePlayer[], rng: Rng): SimPlayer[] {
-  const starters = coreXI.map((c, i) => {
-    const { first, last } = nameParts({ name: c.name })
-    return playerFromRating(
-      { id: `t${teamId}-c${i}`, name: c.name, first, last, nat: c.nat, pos: c.pos, age: c.age, rating: c.rating, starter: true },
-      rng,
-    )
-  })
-  const level = squadStrength(starters)
-  const bench = placeholderSquad(teamId, level, rng, GIANT_POOL).filter((p) => !p.starter)
-  return pickStarters([...starters, ...bench])
-}
-
-// Plantilla del club del jugador (por ahora, la de ejemplo)
-export function userSquad(rng: Rng): SimPlayer[] {
-  return pickStarters(
-    [...STARTERS, ...SUBS].map((p) =>
-      playerFromRating(
-        {
-          id: `u-${p.id}`,
-          name: p.name,
-          ...nameParts({ name: p.name }),
-          nat: 'ESP' as const,
-          pos: p.pos,
-          age: p.age,
-          rating: p.rating,
-          starter: false,
-          prodigy: rollProdigy(p.age, PRODIGY_CHANCE.youth, rng),
-        },
-        rng,
-      ),
+    limitTopStars(
+      picked.map((p) => {
+        const rating = clamp(p.rating + delta, 35, 99)
+        return { ...p, rating, peak: Math.max(rating, clamp(p.peak + delta, 55, 99)) }
+      }),
     ),
   )
+}
+
+// Plantilla del club del jugador: 18 jugadores aleatorios, con nivel de media-alta de 2.ª división
+export const USER_START_LEVEL: [number, number] = START.userStartLevel
+
+export function userSquad(rng: Rng): SimPlayer[] {
+  const level = USER_START_LEVEL[0] + rng() * (USER_START_LEVEL[1] - USER_START_LEVEL[0])
+  return placeholderSquad(0, Math.round(level * 10) / 10, rng, homePool(), 'u')
 }
 
 export interface ProgressOptions {
@@ -154,6 +145,21 @@ export interface ProgressOptions {
   idPrefix: string
 }
 
+// Si la plantilla es demasiado grande, salen los peores de las posiciones con exceso
+function prune(squad: SimPlayer[]): SimPlayer[] {
+  let list = squad
+  while (list.length > MAX_SQUAD) {
+    const keep = (p: SimPlayer) => p.rating + (p.peak - p.rating) * AI_MARKET.keepBenchValue
+    const excess = list
+      .filter((p) => list.filter((q) => q.pos === p.pos).length > SQUAD_TEMPLATE[p.pos])
+      .sort((a, b) => keep(a) - keep(b) || a.id.localeCompare(b.id))
+    if (excess.length === 0) break
+    const out = excess[0]
+    list = list.filter((p) => p.id !== out.id)
+  }
+  return list
+}
+
 // Pasa un año: todos envejecen, se retiran los veteranos y se completa la plantilla
 export function progressSquad(squad: SimPlayer[], o: ProgressOptions, rng: Rng): SimPlayer[] {
   let list = squad.filter((p) => !o.removeIds.includes(p.id)).map((p) => progressPlayer(p, rng))
@@ -162,15 +168,7 @@ export function progressSquad(squad: SimPlayer[], o: ProgressOptions, rng: Rng):
   // Los clubes de la IA renuevan su plantilla soltando a algunos veteranos
   if (!o.useYouth) list = list.filter((p) => !(p.age >= 33 && rng() < 0.35))
 
-  // Si la plantilla es demasiado grande, salen los peores de las posiciones con exceso
-  while (list.length > MAX_SQUAD) {
-    const excess = list
-      .filter((p) => list.filter((q) => q.pos === p.pos).length > SQUAD_TEMPLATE[p.pos])
-      .sort((a, b) => a.rating - b.rating || a.id.localeCompare(b.id))
-    if (excess.length === 0) break
-    const out = excess[0]
-    list = list.filter((p) => p.id !== out.id)
-  }
+  list = prune(list)
 
   // Se completan las posiciones que quedaron cortas
   let n = 0
@@ -180,5 +178,7 @@ export function progressSquad(squad: SimPlayer[], o: ProgressOptions, rng: Rng):
       list.push(o.useYouth ? newYouth(id, pos, o.level, o.youthBonus, rng) : newSigning(id, pos, o.level, rng))
     }
   }
+  // Rellenar huecos puede pasar el máximo: se recorta otra vez
+  list = limitTopStars(prune(list))
   return o.keepLineup ? repairStarters(list) : pickStarters(list)
 }

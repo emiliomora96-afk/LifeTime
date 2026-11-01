@@ -118,6 +118,30 @@ export const ACADEMY_POOL: NatPool = { ...SPAIN_POOL, ESP: 240 }
 // Clubes de los gigantes (ficha más internacional para los suplentes)
 export const GIANT_POOL: NatPool = { ...SPAIN_POOL, ESP: 40 }
 
+/* ---------- Las otras ligas: mayoría de casa y una mezcla propia de extranjeros ---------- */
+export const ENGLAND_POOL: NatPool = {
+  ING: 58, FRA: 5, ESP: 4, BRA: 4, POR: 4, ARG: 3, ALE: 3, ITA: 2, PBA: 3, BEL: 2, SEN: 2.5, MAR: 1, COL: 2, URU: 1.5, CRO: 1, MEX: 1,
+}
+export const ITALY_POOL: NatPool = {
+  ITA: 58, ARG: 6, BRA: 4, FRA: 4, ESP: 3, POR: 3, ALE: 2, ING: 1.5, URU: 3, COL: 2, CRO: 3, BEL: 1, SEN: 1.5, MAR: 1.5, PBA: 1, MEX: 1,
+}
+export const GERMANY_POOL: NatPool = {
+  ALE: 55, FRA: 4, ING: 2, ESP: 3, POR: 2, ITA: 2, BRA: 4, ARG: 2, PBA: 3, BEL: 2, CRO: 4, SEN: 2, MAR: 2, COL: 1, URU: 1, MEX: 1,
+}
+export const FRANCE_POOL: NatPool = {
+  FRA: 58, SEN: 5, MAR: 4, BRA: 5, ARG: 3, POR: 4, ESP: 3, ITA: 2, ALE: 2, ING: 1.5, BEL: 3, COL: 2, URU: 1.5, CRO: 1, PBA: 1, MEX: 1,
+}
+
+// De dónde sale la gente en cada liga, según la nacionalidad local. Cantera: casi todos de casa. Gigantes: más mezcla.
+export function poolsForNat(nat: NatId): { home: NatPool; academy: NatPool; giant: NatPool } {
+  const home = (
+    { ESP: SPAIN_POOL, ING: ENGLAND_POOL, ITA: ITALY_POOL, ALE: GERMANY_POOL, FRA: FRANCE_POOL } as Partial<Record<NatId, NatPool>>
+  )[nat] ?? SPAIN_POOL
+  if (home === SPAIN_POOL) return { home, academy: ACADEMY_POOL, giant: GIANT_POOL }
+  const w = home[nat] ?? 50
+  return { home, academy: { ...home, [nat]: Math.round(w * 4) }, giant: { ...home, [nat]: Math.round((w * 2) / 3) } }
+}
+
 export function pickNation(pool: NatPool, rng: Rng): NatId {
   const entries = (Object.entries(pool) as [NatId, number][]).filter(([, w]) => w > 0)
   return pickWeighted(entries, ([, w]) => w, rng)?.[0] ?? 'ESP'

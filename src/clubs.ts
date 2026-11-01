@@ -1,5 +1,4 @@
-import type { NatId } from './nations'
-import type { Position } from './sample'
+import { START } from './lifetimeConfig'
 
 /* ---------- Clubes de la liga española ---------- */
 // Los gigantes son referencias a los grandes reales: solo se conserva ciudad y color,
@@ -15,104 +14,35 @@ export const TIER_LABEL: Record<Tier, string> = {
   ascendido: 'Recién ascendido',
 }
 
-export interface CorePlayer {
-  pos: Position
-  name: string
-  nat: NatId
-  age: number
-  rating: number
-}
-
 export interface ClubDef {
   name: string
   city: string
   colors: [string, string]
   tier: Tier
-  base: number // nivel al que apunta (los gigantes lo sacan de su once)
-  core?: CorePlayer[] // once inicial hecho a mano (solo gigantes)
+  base: number // nivel inicial de la plantilla aleatoria (después cada club evoluciona por su cuenta)
 }
 
-// Formato corto: 'POS|Nombre Apellido|NAC|edad|valoración'
-// 'shift' baja o sube todas las valoraciones del once para afinar cuánto domina el club
-function core(rows: string[], shift = 0): CorePlayer[] {
-  return rows.map((row) => {
-    const [pos, name, nat, age, rating] = row.split('|')
-    return { pos: pos as Position, name, nat: nat as NatId, age: Number(age), rating: Number(rating) + shift }
-  })
+// Cómo arranca cada tipo de club: dinero, prestigio, cantera y estadio.
+// Desde el Paso 10 todos los clubes (gigantes incluidos) viven con las mismas reglas que el tuyo:
+// ingresan, pagan sueldos, fichan, venden y suben juveniles. Los gigantes solo arrancan con más dinero y prestigio.
+export interface TierProfile {
+  budget: number
+  prestige: number
+  academy: number // nivel de cantera 0 a 3
+  stadium: number // nivel de estadio 0 a 3
 }
 
-// Cuánto se baja el once hecho a mano de cada gigante. Madrilia es el más fuerte; el ajuste del Barça y del Atlético
-// es menor para que ningún gigante quede por debajo de un grande (Paso 7: antes el Atlético ganaba solo el 3% de las ligas).
-const ELITE_SHIFT = -8 // Real Madrilia
-const BARCELONIA_SHIFT = -7.5
-const ATLETICO_SHIFT = -6
-const GRANDE_SHIFT = -2.5
+export const TIER_PROFILE: Record<Tier, TierProfile> = START.profiles // las cifras están en lifetimeConfig.ts
 
 /* ---------- Primera división: 7 gigantes + 13 clubes por nivel ---------- */
 const GIANTS: ClubDef[] = [
-  {
-    name: 'Real Madrilia', city: 'Madrid', colors: ['#f1f5f9', '#d4af37'], tier: 'elite', base: 88,
-    core: core([
-      'POR|Thibaut Lambert|BEL|31|88',
-      'DEF|Lucas Ordóñez|ESP|28|86', 'DEF|Rúben Teixeira|POR|26|87', 'DEF|Jonas Becker|ALE|29|87', 'DEF|Marcos Vidal|ESP|24|85',
-      'MED|Declan Foster|ING|24|90', 'MED|Federico Acosta|URU|27|88', 'MED|Luka Babić|CRO|33|86',
-      'DEL|Gabriel Moura|BRA|22|90', 'DEL|Théo Mercier|FRA|26|91', 'DEL|Matheus Cardoso|BRA|20|88',
-    ], ELITE_SHIFT),
-  },
-  {
-    name: 'FC Barcelonía', city: 'Barcelona', colors: ['#1e40af', '#9f1239'], tier: 'elite', base: 86,
-    core: core([
-      'POR|Marc Ibáñez|ESP|27|85',
-      'DEF|Joaquín Ledesma|ARG|26|85', 'DEF|Pau Montero|ESP|22|86', 'DEF|Diogo Almeida|POR|29|85', 'DEF|Jordi Castro|ESP|25|84',
-      'MED|Álvaro Molina|ESP|20|88', 'MED|Nolan Perrin|FRA|25|86', 'MED|Enzo Giménez|ARG|28|85',
-      'DEL|Raphaël Roux|FRA|27|89', 'DEL|João Lima|BRA|21|89', 'DEL|Thomas Willems|BEL|30|85',
-    ], BARCELONIA_SHIFT),
-  },
-  {
-    name: 'Atlético Madrileño', city: 'Madrid', colors: ['#dc2626', '#1d4ed8'], tier: 'elite', base: 84,
-    core: core([
-      'POR|Santiago Acuña|URU|30|84',
-      'DEF|Matías Gutiérrez|ARG|27|84', 'DEF|Hugo Navarro|ESP|26|83', 'DEF|Mehdi Benali|MAR|28|83', 'DEF|Facundo Paredes|ARG|31|82',
-      'MED|Marcos Ortega|ESP|29|85', 'MED|Caio Barbosa|BRA|25|83', 'MED|Diego Ruiz|ESP|24|84',
-      'DEL|Franco Bustos|ARG|30|86', 'DEL|Antoine Girard|FRA|26|85', 'DEL|Álvaro Garrido|ESP|28|83',
-    ], ATLETICO_SHIFT),
-  },
-  {
-    name: 'Real Sevillana', city: 'Sevilla', colors: ['#f8fafc', '#dc2626'], tier: 'grande', base: 80,
-    core: core([
-      'POR|Rui Almeida|POR|32|80',
-      'DEF|Adrián Molina|ESP|27|80', 'DEF|Youssef Idrissi|MAR|26|81', 'DEF|Ezequiel Sosa|ARG|29|79', 'DEF|Iván Castro|ESP|24|78',
-      'MED|Joris Mulder|PBA|27|80', 'MED|Santiago Ríos|COL|26|79', 'MED|Pablo Ruiz|ESP|31|80',
-      'DEL|Cristian Ospina|COL|27|82', 'DEL|Luis Morales|MEX|25|80', 'DEL|Ousmane Sarr|SEN|23|81',
-    ], GRANDE_SHIFT),
-  },
-  {
-    name: 'Valencia Turia CF', city: 'Valencia', colors: ['#f8fafc', '#ea580c'], tier: 'grande', base: 79,
-    core: core([
-      'POR|Mateo Salazar|MEX|29|79',
-      'DEF|Carlos Vidal|ESP|26|79', 'DEF|Nuno Pereira|POR|27|80', 'DEF|Gonzalo Giménez|ARG|28|78', 'DEF|Sergio Navarro|ESP|22|78',
-      'MED|Felipe Araújo|BRA|25|80', 'MED|Ante Jurić|CRO|29|79', 'MED|Daniel Sánchez|ESP|24|79',
-      'DEL|Brayan Cuesta|COL|24|80', 'DEL|Moussa Diop|SEN|27|80', 'DEL|Marco Conti|ITA|28|79',
-    ], GRANDE_SHIFT),
-  },
-  {
-    name: 'Athletic Bilbaíno', city: 'Bilbao', colors: ['#dc2626', '#f8fafc'], tier: 'grande', base: 79,
-    core: core([
-      'POR|Iker Zubizarreta|ESP|30|79',
-      'DEF|Aitor Goikoetxea|ESP|27|79', 'DEF|Mikel Urrutia|ESP|29|78', 'DEF|Asier Larrañaga|ESP|25|79', 'DEF|Ander Elorza|ESP|23|77',
-      'MED|Jon Aguirre|ESP|26|80', 'MED|Oihan Etxeberria|ESP|24|78', 'MED|Unai Ibarra|ESP|28|79',
-      'DEL|Gorka Mendizábal|ESP|27|80', 'DEL|Iñaki Arana|ESP|22|79', 'DEL|Beñat Lasa|ESP|31|78',
-    ], GRANDE_SHIFT),
-  },
-  {
-    name: 'Real Donostiarra', city: 'San Sebastián', colors: ['#2563eb', '#f8fafc'], tier: 'grande', base: 79,
-    core: core([
-      'POR|Álex Garmendia|ESP|28|78',
-      'DEF|Martín Aranburu|ESP|25|79', 'DEF|Rúben Lopes|POR|27|78', 'DEF|Ibai Olaizola|ESP|22|78', 'DEF|Théo Dubois|FRA|26|79',
-      'MED|Mathis Colin|FRA|24|80', 'MED|Santiago Gómez|ESP|29|79', 'MED|Hugo Fernández|ESP|27|79',
-      'DEL|Nicolás Maidana|ARG|26|80', 'DEL|Brian Reyes|MEX|23|79', 'DEL|Pablo Castro|ESP|30|78',
-    ], GRANDE_SHIFT),
-  },
+  { name: 'Real Madrilia', city: 'Madrid', colors: ['#f1f5f9', '#d4af37'], tier: 'elite', base: 80.5 },
+  { name: 'FC Barcelonía', city: 'Barcelona', colors: ['#1e40af', '#9f1239'], tier: 'elite', base: 79.5 },
+  { name: 'Atlético Madrileño', city: 'Madrid', colors: ['#dc2626', '#1d4ed8'], tier: 'elite', base: 78.5 },
+  { name: 'Real Sevillana', city: 'Sevilla', colors: ['#f8fafc', '#dc2626'], tier: 'grande', base: 77 },
+  { name: 'Valencia Turia CF', city: 'Valencia', colors: ['#f8fafc', '#ea580c'], tier: 'grande', base: 76.5 },
+  { name: 'Athletic Bilbaíno', city: 'Bilbao', colors: ['#dc2626', '#f8fafc'], tier: 'grande', base: 76.5 },
+  { name: 'Real Donostiarra', city: 'San Sebastián', colors: ['#2563eb', '#f8fafc'], tier: 'grande', base: 76.5 },
 ]
 
 const D1_OTHERS: ClubDef[] = [

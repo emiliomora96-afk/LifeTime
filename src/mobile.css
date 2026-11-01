@@ -1,0 +1,204 @@
+/* =====================================================================
+   Lifetime · capa móvil
+   Se importa al final de main.tsx para ganar sobre el resto de CSS.
+   Nada aquí cambia el escritorio, salvo los ajustes generales del bloque 1.
+   ===================================================================== */
+
+:root { --nav-h: 64px; }
+
+/* ---------- 1. Ajustes generales (todas las pantallas) ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: clip; }
+
+/* La altura real visible en móvil (la barra del navegador sube y baja) */
+@supports (min-height: 100dvh) {
+  body, #root, .app { min-height: 100dvh; }
+}
+
+/* Sin retraso de toque ni zoom por doble toque en lo que se pulsa */
+button, select, summary, label, .tab, .level, .sub-item, .nav-item, .mini-btn, .btn, .preset, .shape, .token,
+.squad-table tbody tr { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* iPhone hace zoom al enfocar un campo menor de 16 px */
+input, select, textarea { font-size: 16px; }
+
+.trophy-img { max-width: 100%; height: auto; }
+
+/* Vitrina: la columna mínima no puede ser más ancha que la pantalla */
+.vt-row { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+
+/* Motivo de un botón desactivado: en móvil no hay "title" al pasar el cursor, así que se escribe debajo */
+.blocker { display: none; }
+
+/* Plantilla / alineación: la columna única se centra en tabletas */
+@media (max-width: 1000px) {
+  .lineup-body { justify-content: center; gap: 16px; }
+}
+
+/* ---------- 2. Móvil y tableta pequeña (hasta 800 px) ---------- */
+@media (max-width: 800px) {
+
+  /* Espacios más cortos para ganar ancho útil */
+  .content { padding: 12px 10px calc(var(--nav-h) + 24px + env(safe-area-inset-bottom, 0px)); }
+  .screen { padding: 20px 14px calc(32px + env(safe-area-inset-bottom, 0px)); }
+  h1 { font-size: 1.5rem; }
+  .subtitle { margin-bottom: 16px; font-size: 0.9rem; }
+  .page { gap: 14px; }
+  .card { padding: 14px; border-radius: 12px; }
+  .grid-2, .grid-3, .dash { gap: 14px; }
+  .layout { gap: 16px; }
+  .summary { position: static; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kpi { padding: 10px 12px; }
+  .kpi strong { font-size: 1.05rem; }
+
+  /* Barra superior: el club arriba y los 4 datos en una sola fila */
+  .topbar {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 8px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+  }
+  .topbar-club { grid-column: 1 / -1; margin-right: 0; font-size: 0.95rem; }
+  .stat { align-items: flex-start; min-width: 0; }
+  .stat span { font-size: 0.6rem; }
+  .stat strong { font-size: 0.78rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat-link { text-align: left; }
+
+  /* Menú principal: barra fija abajo, al alcance del pulgar */
+  .head { position: static; }
+  .navbar { background: transparent; border-bottom: none; }
+  .navbar-row {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; gap: 0; padding: 0 0 env(safe-area-inset-bottom, 0px);
+    background: var(--panel); border-top: 1px solid var(--border);
+  }
+  .nav-tabs { width: 100%; overflow: visible; gap: 0; }
+  .nav-item {
+    flex: 1 1 0; min-width: 0; height: var(--nav-h); padding: 6px 2px; gap: 2px; border-radius: 0;
+    flex-direction: column; justify-content: center; text-align: center;
+    white-space: normal; line-height: 1.05; font-size: 0.64rem;
+  }
+  .nav-item span { font-size: 1.25rem; line-height: 1; }
+  .nav-item.active { background: transparent; color: var(--accent-hover); box-shadow: inset 0 3px 0 var(--accent); }
+  .nav-reset { display: none; } /* "Nueva partida" está en Club › Palmarés y legado */
+
+  /* Submenú (Plantilla · Mercado · Cantera, etc.) */
+  .subnav { padding: 0 6px; background: var(--panel); border-bottom: 1px solid var(--border); }
+  .sub-item { min-height: 46px; padding: 0 14px; }
+
+  /* Botones y controles: mínimo cómodo para el dedo */
+  .btn { min-height: 48px; }
+  .btn.inline { width: 100%; }
+  .mini-btn { min-height: 40px; padding: 8px 12px; font-size: 0.85rem; }
+  .tab, .level { min-height: 40px; padding: 8px 14px; }
+  .link-btn { min-height: 40px; }
+  input[type='text'], select { min-height: 46px; }
+  .preset { width: 44px; height: 44px; }
+  .shape { min-height: 64px; padding: 12px 16px; }
+  .market-check { min-height: 40px; }
+  .market-check input { width: 22px; height: 22px; }
+  .tabs { gap: 6px; }
+
+  /* ----- Alineación: campo más compacto y fichas más pequeñas ----- */
+  .pitch { max-width: 100%; }
+  .token { width: 74px; }
+  .token-badge { width: 54px; height: 54px; }
+  .token-val { font-size: 0.76rem; min-width: 24px; right: -8px; }
+  .token-name { font-size: 0.68rem; }
+
+  /* La ficha del jugador sale como panel desde abajo, sobre la barra de menú */
+  .ficha-empty { display: none; }
+  .ficha:not(.ficha-empty) {
+    position: fixed; left: 8px; right: 8px; z-index: 40; gap: 12px; padding: 14px;
+    bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    max-height: min(62vh, 520px); overflow-y: auto; overscroll-behavior: contain;
+    background: var(--panel); border-color: var(--accent); box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.55);
+    animation: ficha-up 0.18s ease-out;
+  }
+  /* Durante un cambio se compacta para dejar a la vista el campo y la lista */
+  .ficha.swapping { max-height: none; }
+  .ficha.swapping .ficha-pot, .ficha.swapping .ficha-grid, .ficha.swapping .ficha-hint { display: none; }
+  .ficha-close { width: 40px; height: 40px; font-size: 1rem; top: 6px; right: 6px; }
+  .ficha-top { padding-right: 44px; }
+  .ficha-photo { width: 104px; height: 104px; }
+  .ficha-top { grid-template-columns: 104px 1fr; }
+  .ficha-swap { min-height: 46px; }
+
+  /* Plantilla completa */
+  .squad-scroll { max-height: 60vh; -webkit-overflow-scrolling: touch; }
+  .squad-scroll .data-table td, .squad-scroll .data-table th { padding: 8px 6px; font-size: 0.82rem; }
+  .squad-table td:nth-child(2) { white-space: normal; min-width: 96px; }
+  .squad-table tbody tr { height: 44px; }
+  .nat-code { display: none; }
+
+  /* ----- Tablas de Mercado y Cantera: cada fila pasa a ser una tarjeta ----- */
+  .data-table.market-table { min-width: 0; }
+  .data-table.market-table thead { display: none; }
+  .data-table.market-table, .data-table.market-table tbody { display: block; }
+  .data-table.market-table tbody tr {
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; align-items: center;
+    padding: 12px 0; border-top: 1px solid var(--border);
+  }
+  .data-table.market-table tbody tr:first-child { border-top: none; }
+  .data-table.market-table td { display: block; padding: 0; border: 0; white-space: normal; text-align: left; }
+  .data-table.market-table td.num { text-align: left; }
+  .data-table.market-table td:nth-child(1) { grid-column: 1; }
+  .data-table.market-table td:nth-child(2) { grid-column: 2 / -1; font-weight: 700; font-size: 1rem; }
+  /* Mercado de fichajes: el club va en su propia línea */
+  .data-table.market-table td:nth-child(3):not([data-label]) { grid-column: 1 / -1; color: var(--muted); font-size: 0.82rem; }
+  .data-table.market-table td[data-label] {
+    grid-column: span 2; display: flex; flex-direction: column; gap: 2px;
+    background: var(--bg); border-radius: 8px; padding: 6px 8px; font-weight: 600; font-size: 0.9rem;
+  }
+  .data-table.market-table td[data-label]::before {
+    content: attr(data-label); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  /* El botón de acción ocupa todo el ancho, al final de la tarjeta */
+  .data-table.market-table td:last-child { grid-column: 1 / -1; margin-top: 2px; }
+  .data-table.market-table td:last-child > .mini-btn { width: 100%; min-height: 44px; }
+  .data-table.market-table .row-btns { gap: 8px; }
+  .data-table.market-table .row-btns .mini-btn { flex: 1 1 0; min-height: 44px; }
+  .data-table.market-table td[colspan] { grid-column: 1 / -1; text-align: center; }
+  .blocker { display: block; margin-top: 6px; font-size: 0.75rem; color: #fbbf24; text-align: center; }
+
+  /* Palmarés */
+  .lg-hero { padding: 20px 14px; }
+  .lg-hero h2 { font-size: 1.4rem; }
+  .lg-trophy { flex: 1 1 120px; }
+  .lg-actions .btn { width: 100%; }
+  .lg-reset { margin-top: 4px; }
+
+  /* Celebraciones */
+  .cup-show-trophy { font-size: 5.5rem; }
+  .cup-show-name { font-size: 1.3rem; }
+
+  /* Partido y torneos: botones grandes de ancho completo */
+  .cl-actions, .tn-actions { justify-content: stretch; }
+  .cl-actions .btn, .tn-actions .btn { width: 100%; min-height: 48px; }
+  .cl-table, .tn-table { font-size: 0.78rem; }
+}
+
+/* ---------- 3. Teléfonos (hasta 700 px): el partido aprovecha el ancho ---------- */
+@media (max-width: 700px) {
+  .cl-stage { width: min(100%, 320px); }
+}
+
+/* ---------- 4. Teléfonos muy estrechos ---------- */
+@media (max-width: 360px) {
+  .nav-item { font-size: 0.58rem; }
+  .token { width: 64px; }
+  .token-badge { width: 47px; height: 47px; }
+  .token-name { font-size: 0.62rem; }
+}
+
+/* ---------- 5. Teléfono en horizontal: menú más bajo ---------- */
+@media (max-width: 800px) and (max-height: 480px) and (orientation: landscape) {
+  :root { --nav-h: 46px; }
+  .nav-item { flex-direction: row; gap: 6px; font-size: 0.75rem; }
+  .nav-item span { font-size: 1rem; }
+  .ficha:not(.ficha-empty) { max-height: 70vh; }
+}
+
+@keyframes ficha-up { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ficha:not(.ficha-empty) { animation: none; }
+}

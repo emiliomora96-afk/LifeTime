@@ -1,10 +1,12 @@
 import './ficha.css'
 import type { Club } from './types'
+import PlayerFace from './PlayerFace'
+import { auraOf } from './aura'
 import type { SimPlayer } from './players'
 import { marketValue, nameParts, phaseOf, playerSalary, potentialLabel, potentialRange } from './players'
 import { NATIONS } from './nations'
 import { formatMoney } from './data'
-import { PHASES, gainClass, gainLabel, ratingColor } from './playerView'
+import { PHASES, deltaClass, deltaText, gainClass, gainLabel } from './playerView'
 
 const BAR_MIN = 40
 const BAR_MAX = 100
@@ -14,26 +16,15 @@ function pct(v: number): number {
   return Math.max(0, Math.min(100, ((v - BAR_MIN) / (BAR_MAX - BAR_MIN)) * 100))
 }
 
-// Silueta en los colores de tu club (el retrato anime llegará más adelante)
-function Silhouette({ club }: { club: Club }) {
-  return (
-    <svg className="ficha-photo" viewBox="0 0 100 100" aria-hidden="true">
-      <rect width="100" height="100" rx="14" fill={club.primaryColor} />
-      <circle cx="50" cy="38" r="16" fill={club.secondaryColor} opacity="0.95" />
-      <path d="M16 100 C16 70 32 60 50 60 C68 60 84 70 84 100 Z" fill={club.secondaryColor} opacity="0.95" />
-    </svg>
-  )
-}
-
 interface Props {
   player: SimPlayer | undefined
-  club: Club
+  club?: Club
   swapMode: boolean
   onToggleSwap: () => void
   onClose: () => void
 }
 
-export default function PlayerCard({ player, club, swapMode, onToggleSwap, onClose }: Props) {
+export default function PlayerCard({ player, swapMode, onToggleSwap, onClose }: Props) {
   if (!player) {
     return (
       <aside className="ficha ficha-empty">
@@ -49,17 +40,19 @@ export default function PlayerCard({ player, club, swapMode, onToggleSwap, onClo
   const average = Math.round((lo + hi) / 2)
   const phase = PHASES[phaseOf(player)]
   const slow = phaseOf(player) === 'crece' && !player.starter
-  const color = ratingColor(player.rating)
+  const color = auraOf(player.rating).color
   const closed = lo === hi
 
   return (
-    <aside className="ficha">
+    <aside className={'ficha' + (swapMode ? ' swapping' : '')}>
       <button type="button" className="ficha-close" aria-label="Cerrar ficha" onClick={onClose}>
         ✕
       </button>
 
       <div className="ficha-top">
-        <Silhouette club={club} />
+        <div className="ficha-photo">
+          <PlayerFace player={player} shape="card" res={192} />
+        </div>
         <div className="ficha-id">
           <span className="ficha-first">{first}</span>
           <strong className="ficha-last">{last}</strong>
@@ -71,6 +64,9 @@ export default function PlayerCard({ player, club, swapMode, onToggleSwap, onClo
         <div className="ficha-rating" style={{ color, borderColor: color }}>
           {player.rating}
           <small>VAL</small>
+          {deltaText(player.lastGain) && (
+            <span className={deltaClass(player.lastGain)}>{deltaText(player.lastGain)}</span>
+          )}
         </div>
       </div>
 

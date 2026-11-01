@@ -3,8 +3,8 @@ import type { CrestShape } from './types'
 export const SAVE_KEY = 'lifetime-club'
 export const LEAGUE = 'España'
 export const START_DIVISION = 2
-// Cifra provisoria: el presupuesto inicial sigue pendiente de definir (sección 6 de la guía)
-export const START_BUDGET = 2_000_000
+// Presupuesto con el que empieza el club
+export const START_BUDGET = 15_000_000
 
 export const COLOR_PRESETS = [
   { name: 'Rojo y blanco', primary: '#c62828', secondary: '#ffffff' },

@@ -1,9 +1,17 @@
 import { clamp, createRng, mixSeed, normal, pickWeighted, poisson, round1, shuffle } from './rng'
 import type { Rng } from './rng'
-import { giantSquad, pickStarters, placeholderSquad, progressSquad, repairStarters, squadStrength, userSquad } from './squads'
+import { FORMATION_COUNT, POSITION_ORDER, pickStarters, placeholderSquad, progressSquad, repairStarters, squadStrength, userSquad } from './squads'
 import type { SimPlayer } from './players'
-import { DIV1_CLUBS, DIV2_CLUBS, USER_SLOT_DIV2 } from './clubs'
+import type { Position } from './sample'
+import { TIER_PROFILE, USER_SLOT_DIV2 } from './clubs'
+import { activeLeague, giantPool } from './activeLeague'
+import type { LeagueId } from './leagues'
+import { leagueDef } from './leagues'
 import type { ClubDef, Tier } from './clubs'
+import { generateIntake } from './academy'
+import { aiTransferWindow, evolveAiTeam, leagueMean } from './aiclubs'
+import { START } from './lifetimeConfig'
+import type { MoveNews } from './aiclubs'
 
 export type Level = 1 | 2
 export type Tactic = 'ofensiva' | 'equilibrada' | 'defensiva'
@@ -11,11 +19,11 @@ export type Tactic = 'ofensiva' | 'equilibrada' | 'defensiva'
 export const USER_ID = 0
 export const TEAMS_PER_DIVISION = 20
 export const ROUNDS = 2 * (TEAMS_PER_DIVISION - 1) // 38 jornadas
-export const LEAGUE_VERSION = 3
+export const LEAGUE_VERSION = 6
 export const PROMOTED_COUNT = 3 // provisorio: las reglas de ascenso están pendientes
 
 /* ---------- Ajustes del modelo de partido ---------- */
-const BASE_GOALS = 1.25 // goles esperados de un equipo igual al rival, en campo neutral
+const BASE_GOALS = 1.3 // goles esperados de un equipo igual al rival, en campo neutral
 const HOME_FACTOR = 1.15
 const AWAY_FACTOR = 0.9
 const STRENGTH_SENSITIVITY = 0.045 // cuánto pesa cada punto de diferencia de nivel
@@ -27,7 +35,19 @@ const TACTIC_MOD: Record<Tactic, { atk: number; def: number }> = {
   defensiva: { atk: -2, def: 2 },
 }
 
-const SCORE_WEIGHT = { POR: 0.005, DEF: 0.12, MED: 0.45, DEL: 1 }
+const SCORE_WEIGHT = { POR: 0.005, DEF: 0.1, MED: 0.3, DEL: 1 }
+// Los goles se concentran en los mejores: un delantero de élite se lleva buena parte de los goles de su equipo
+const SCORE_EXPONENT = 9
+// Cada jugador tiene su "olfato": un rematador nato (hasta +25 %) o uno más discreto (hasta -15 %), fijo según su id
+function finishing(id: string): number {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return 0.8 + 0.65 * ((h % 1000) / 999)
+}
+// Peso de un jugador al repartir los goles de su equipo (lo usan la liga, las copas y las competiciones europeas)
+export function scoringWeight(p: { id: string; pos: Position; rating: number; starter?: boolean }): number {
+  return SCORE_WEIGHT[p.pos] * Math.pow(p.rating / 70, SCORE_EXPONENT) * finishing(p.id) * (p.starter ? 1 : 0.3)
+}
 const ASSIST_WEIGHT = { POR: 0.02, DEF: 0.35, MED: 1, DEL: 0.7 }
 
 /* ---------- Tipos ---------- */
@@ -42,7 +62,12 @@ export interface SimTeam {
   city?: string // ciudad del club (el club del jugador la tiene en su ficha)
   colors?: [string, string] // colores del club
   tier?: Tier // gigante, aspirante, media tabla...
-  anchor?: number // los gigantes siempre apuntan a su nivel, estén en la división que estén
+  // Clubes de la IA (Paso 10): viven con las mismas reglas que el club del jugador
+  budget?: number // dinero del club
+  prestige?: number // 0 a 100, como el del jugador
+  academy?: SimPlayer[] // juveniles de su cantera
+  academyLevel?: number // inversión en cantera, 0 a 3
+  stadiumLevel?: number // mantenimiento del estadio, 0 a 3
   autoLineup?: boolean // false: el jugador eligió su once (solo el club del jugador). Sin definir = automático
 }
 
@@ -84,6 +109,7 @@ export interface DivisionState {
 export interface LeagueState {
   v?: number // versión de la estructura (si cambia, la partida guardada se reinicia)
   year: number // temporadas cerradas
+  moves?: MoveNews[] // fichajes y juveniles destacados de la última ventana de la IA
   userDivision: Level
   divisions: Record<Level, DivisionState>
 }
@@ -126,7 +152,7 @@ function goalEvents(team: SimTeam, goals: number, rng: Rng): GoalEvent[] {
   for (let i = 0; i < goals; i++) {
     const scorer = pickWeighted(
       team.squad,
-      (p) => SCORE_WEIGHT[p.pos] * Math.pow(p.rating / 70, 3) * (p.starter ? 1 : 0.3),
+      scoringWeight,
       rng,
     )
     if (!scorer) continue
@@ -261,17 +287,29 @@ export function computeTable(div: DivisionState): StandRow[] {
 }
 
 /* ---------- Liga ---------- */
-function makeTeam(id: number, def: ClubDef, level: number, rng: Rng): SimTeam {
-  const meta = { city: def.city, colors: def.colors, tier: def.tier }
-  if (def.core) {
-    // Gigante: su nivel sale de su once y siempre apunta a él
-    const squad = giantSquad(id, def.core, rng)
-    const strength = squadStrength(squad)
-    return { id, name: def.name, level: strength, strength, form: 0, tactic: 'equilibrada', squad, anchor: strength, ...meta }
-  }
+function makeTeam(id: number, def: ClubDef, level: number, rng: Rng, tier: Tier = def.tier): SimTeam {
+  const profile = TIER_PROFILE[tier]
   const lv = round1(level)
-  const squad = placeholderSquad(id, lv, rng)
-  return { id, name: def.name, level: lv, strength: squadStrength(squad), form: 0, tactic: 'equilibrada', squad, ...meta }
+  // Plantilla aleatoria: los gigantes también (con más extranjeros). Después fichan y suben juveniles como cualquiera.
+  const squad = placeholderSquad(id, lv, rng, tier === 'elite' || tier === 'grande' ? giantPool() : undefined)
+  const strength = squadStrength(squad)
+  return {
+    id,
+    name: def.name,
+    level: lv,
+    strength,
+    form: 0,
+    tactic: 'equilibrada',
+    squad,
+    city: def.city,
+    colors: def.colors,
+    tier,
+    budget: Math.round((profile.budget * (0.8 + rng() * 0.4)) / 10_000) * 10_000,
+    prestige: profile.prestige,
+    academyLevel: profile.academy,
+    stadiumLevel: profile.stadium,
+    academy: generateIntake([], profile.academy, strength, 0, rng, `t${id}`),
+  }
 }
 
 function makeUserTeam(rng: Rng): SimTeam {
@@ -285,16 +323,28 @@ function buildDivision(level: Level, teams: SimTeam[], rng: Rng): DivisionState 
   return { level, teams, schedule: buildSchedule(order), results: [], played: 0 }
 }
 
-export function createLeague(seed: number): LeagueState {
+// leagueId: la liga en la que se crea el mundo (si no se indica, la de la partida en curso)
+export function createLeague(seed: number, leagueId?: LeagueId): LeagueState {
   const rng = createRng(mixSeed(seed, 7))
+  const def = leagueId ? leagueDef(leagueId) : activeLeague()
+  const DIV1_CLUBS = def.div1
+  const DIV2_CLUBS = def.div2
 
-  const first = DIV1_CLUBS.map((def, i) => makeTeam(i + 1, def, def.base + normal(rng), rng))
+  // Punto de partida (lifetimeConfig.ts, START): el Val medio de cada división y cuántos clubes arrancan como élite.
+  // Se conserva el orden y las diferencias del diseño de cada club (def.base), reescaladas a la media de la división.
+  const baseMean = (defs: ClubDef[]) => defs.reduce((sum, d) => sum + d.base, 0) / defs.length
+  const startLevel = (def: ClubDef, defs: ClubDef[], cfg: { mean: number; spread: number }) =>
+    cfg.mean + (def.base - baseMean(defs)) * cfg.spread + normal(rng) * START.clubNoise
+  // Los N primeros de 1.ª (los mejores) son élite; si el diseño del club decía élite pero queda fuera del corte, pasa a grande
+  const tierOf = (def: ClubDef, i: number): Tier => (i < START.eliteClubsPerLeague ? 'elite' : def.tier === 'elite' ? 'grande' : def.tier)
+
+  const first = DIV1_CLUBS.map((def, i) => makeTeam(i + 1, def, startLevel(def, DIV1_CLUBS, START.div1), rng, tierOf(def, i)))
 
   let nextId = DIV1_CLUBS.length + 1
   const second: SimTeam[] = []
   DIV2_CLUBS.forEach((def, i) => {
     if (i === USER_SLOT_DIV2) second.push(makeUserTeam(rng))
-    second.push(makeTeam(nextId++, def, def.base + normal(rng), rng))
+    second.push(makeTeam(nextId++, def, startLevel(def, DIV2_CLUBS, START.div2), rng))
   })
 
   return {
@@ -342,6 +392,22 @@ export function swapUserStarters(league: LeagueState, idA: string, idB: string):
   return updateUserTeam(league, (t) => {
     const next = t.squad.map((p) => (p.id === idA || p.id === idB ? { ...p, starter: !p.starter } : p))
     return { ...t, autoLineup: false, squad: next, strength: squadStrength(next) }
+  })
+}
+
+// Corrige un once que no cumple el 4-3-3 (partidas guardadas con una versión anterior, por ejemplo).
+// Respeta lo que eligió el jugador y solo arregla lo que esté roto.
+export function normalizeUserLineup(league: LeagueState): LeagueState {
+  const team = getUserTeam(league)
+  if (!team) return league
+  const starters = team.squad.filter((p) => p.starter)
+  const ok =
+    starters.length === 11 &&
+    POSITION_ORDER.every((pos) => starters.filter((p) => p.pos === pos).length === FORMATION_COUNT[pos])
+  if (ok) return league
+  return updateUserTeam(league, (t) => {
+    const squad = repairStarters(t.squad)
+    return { ...t, squad, strength: squadStrength(squad) }
   })
 }
 
@@ -402,49 +468,42 @@ export function userSeasonResult(league: LeagueState): SeasonOutcome {
   }
 }
 
-const LEVEL_MEAN: Record<Level, number> = { 1: 76, 2: 67 }
-
 export interface SeasonOptions {
   academyBonus: number // mejora de los juveniles del club del jugador
   leaving: string[] // jugadores del club del jugador que se van al terminar la temporada
+  userAsAi?: boolean // simulación sin interfaz: el club del jugador se trata como un club más de la IA (no hay nadie que lo gestione)
 }
 
-// Un año más para todos los jugadores del club
-function evolveTeam(team: SimTeam, level: Level, year: number, rng: Rng, o: SeasonOptions): SimTeam {
-  const isUser = team.id === USER_ID
-  const teamLevel = isUser
-    ? team.strength
-    : round1(
-        clamp(
-          team.level + ((team.anchor ?? LEVEL_MEAN[level]) - team.level) * 0.06 + normal(rng) * 0.8,
-          58,
-          team.anchor ? 92 : 86,
-        ),
-      )
-
+// Un año más para todos los jugadores del club del jugador
+function evolveUserTeam(team: SimTeam, year: number, rng: Rng, o: SeasonOptions): SimTeam {
   const squad = progressSquad(
     team.squad,
     {
-      level: teamLevel,
-      youthBonus: isUser ? o.academyBonus : 0,
-      useYouth: isUser,
-      removeIds: isUser ? o.leaving : [],
-      keepLineup: isUser && team.autoLineup === false,
-      idPrefix: `${isUser ? 'u' : 't' + team.id}-y${year}`,
+      level: team.strength,
+      youthBonus: o.academyBonus,
+      useYouth: true,
+      removeIds: o.leaving,
+      keepLineup: team.autoLineup === false,
+      idPrefix: `u-y${year}`,
     },
     rng,
   )
-  return {
-    ...team,
-    level: teamLevel,
-    strength: squadStrength(squad),
-    form: 0,
-    tactic: isUser ? team.tactic : 'equilibrada',
-    squad,
-  }
+  return { ...team, level: team.strength, strength: squadStrength(squad), form: 0, squad }
 }
 
-// Cierra la temporada: ascensos, descensos, un año más para todos y arranque de la siguiente
+// Ventana de fichajes de la IA a mitad de temporada (más pequeña que la de verano)
+export function aiWinterWindow(league: LeagueState, seed: number, userAsAi = false): LeagueState {
+  const rng = createRng(seed)
+  const ai = [...league.divisions[1].teams, ...league.divisions[2].teams].filter((t) => userAsAi || t.id !== USER_ID)
+  const divisionOf: Record<number, Level> = {}
+  for (const level of [1, 2] as Level[]) for (const t of league.divisions[level].teams) divisionOf[t.id] = level
+  const { teams, news } = aiTransferWindow(ai, rng, { window: 'invierno', season: league.year + 1, tag: `i${league.year + 1}`, divisionOf })
+  const byId = new Map(teams.map((t) => [t.id, t]))
+  const swap = (d: DivisionState): DivisionState => ({ ...d, teams: d.teams.map((t) => byId.get(t.id) ?? t) })
+  return { ...league, moves: news, divisions: { 1: swap(league.divisions[1]), 2: swap(league.divisions[2]) } }
+}
+
+// Cierra la temporada: ascensos, descensos, un año más para todos, mercado de la IA y arranque de la siguiente
 export function finishSeason(
   league: LeagueState,
   seed: number,
@@ -459,18 +518,54 @@ export function finishSeason(
 
   const promotedIds = new Set(table2.slice(0, PROMOTED_COUNT).map((r) => r.id))
   const relegatedIds = new Set(table1.slice(TEAMS_PER_DIVISION - PROMOTED_COUNT).map((r) => r.id))
+  const position = new Map<number, number>()
+  table1.forEach((r, i) => position.set(r.id, i + 1))
+  table2.forEach((r, i) => position.set(r.id, i + 1))
 
   const stay1 = div1.teams.filter((t) => !relegatedIds.has(t.id))
   const up = div2.teams.filter((t) => promotedIds.has(t.id))
   const stay2 = div2.teams.filter((t) => !promotedIds.has(t.id))
   const down = div1.teams.filter((t) => relegatedIds.has(t.id))
 
-  const newFirst = [...stay1, ...up].map((t) => evolveTeam(t, 1, year, rng, options))
-  const newSecond = [...stay2, ...down].map((t) => evolveTeam(t, 2, year, rng, options))
+  const news: MoveNews[] = []
+  // Media actual de la liga (Val del once de todos los clubes): a ella se calibran los fichajes de relleno
+  const ref = leagueMean([...div1.teams, ...div2.teams])
+  const evolve = (t: SimTeam, from: Level, to: Level): SimTeam =>
+    t.id === USER_ID && !options.userAsAi
+      ? evolveUserTeam(t, year, rng, options)
+      : evolveAiTeam(
+          t,
+          {
+            division: from,
+            position: position.get(t.id) ?? 10,
+            promoted: promotedIds.has(t.id),
+            relegated: relegatedIds.has(t.id),
+            newDivision: to,
+            year: year + 1,
+            ref,
+          },
+          rng,
+          news,
+        )
 
+  const first = [...stay1.map((t) => evolve(t, 1, 1)), ...up.map((t) => evolve(t, 2, 1))]
+  const second = [...stay2.map((t) => evolve(t, 2, 2)), ...down.map((t) => evolve(t, 1, 2))]
+
+  // Mercado de verano de la IA: los clubes ricos van a por los mejores jugadores
+  const ai = [...first, ...second].filter((t) => options.userAsAi || t.id !== USER_ID)
+  const divisionOf: Record<number, Level> = {}
+  first.forEach((t) => (divisionOf[t.id] = 1))
+  second.forEach((t) => (divisionOf[t.id] = 2))
+  const window = aiTransferWindow(ai, rng, { window: 'verano', season: year + 1, tag: `v${year + 1}`, divisionOf })
+  const byId = new Map(window.teams.map((t) => [t.id, t]))
+  const newFirst = first.map((t) => byId.get(t.id) ?? t)
+  const newSecond = second.map((t) => byId.get(t.id) ?? t)
+
+  const moves = [...window.news, ...news.filter((n) => n.kind === 'cantera')].slice(0, 16)
   return {
     v: LEAGUE_VERSION,
     year,
+    moves,
     userDivision: newFirst.some((t) => t.id === USER_ID) ? 1 : 2,
     divisions: { 1: buildDivision(1, newFirst, rng), 2: buildDivision(2, newSecond, rng) },
   }

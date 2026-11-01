@@ -1,0 +1,131 @@
+=== Lifetime · 30 temporadas · liga esp · semilla 20260101 ===
+Clubes élite al empezar: Real Madrilia, FC Barcelonía, Atlético Madrileño, Real Sevillana
+Campeones distintos de 1.ª: 7
+
+--- Temporada 1 ---
+Val medio de titulares: 1.ª 81.5 (±4.3) · 2.ª 73.5
+Jugadores 85+: 54 (15.0% de 1.ª) · 90+: 3 (0.8%) · 95+: 0 (0.0%)  [de 720]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 157.5 M vs resto 10.2 M · prestigio 70 vs 21
+Grupo top-7 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 3 · no élite que llegaron alguna vez 3 · de forma sostenida (5+ temporadas) 0
+Niveles de cantera (0/1/2/3): 0 / 25 / 11 / 4 · traspasos por temporada 0 · clubes en deuda máxima 0
+  cantera Básica  generados   36 · pot 85+ 0.0% · pot 90+ 0.0% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados   31 · pot 85+ 25.8% · pot 90+ 3.2% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Máxima  generados   14 · pot 85+ 71.4% · pot 90+ 42.9% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+
+--- Temporada 20 ---
+Val medio de titulares: 1.ª 81.3 (±4.5) · 2.ª 74.9
+Jugadores 85+: 80 (16.8% de 1.ª) · 90+: 5 (1.1%) · 95+: 0 (0.0%)  [de 874]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 87.3 M vs resto 36.6 M · prestigio 89 vs 22
+Grupo top-9 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 5 · no élite que llegaron alguna vez 22 · de forma sostenida (5+ temporadas) 5
+Niveles de cantera (0/1/2/3): 0 / 14 / 20 / 6 · traspasos por temporada 37 · clubes en deuda máxima 0
+  cantera Básica  generados  459 · pot 85+ 1.3% · pot 90+ 0.0% · terminados  339 → Val 80+ 1.2% · 85+ 1 (0.3%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados  954 · pot 85+ 24.6% · pot 90+ 5.3% · terminados  678 → Val 80+ 15.3% · 85+ 23 (3.4%) · 90+ 3 (0.4%) · 95+ 0
+  cantera Máxima  generados  372 · pot 85+ 80.9% · pot 90+ 50.0% · terminados  257 → Val 80+ 53.3% · 85+ 93 (36.2%) · 90+ 29 (11.3%) · 95+ 2
+
+--- Temporada 30 ---
+Val medio de titulares: 1.ª 81.4 (±4.8) · 2.ª 75.0
+Jugadores 85+: 77 (16.2% de 1.ª) · 90+: 5 (1.1%) · 95+: 1 (0.2%)  [de 888]
+95+ por club: máx 1 · clubes con alguno 1 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 88.1 M vs resto 35.2 M · prestigio 93 vs 22
+Grupo top-8 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 4 · no élite que llegaron alguna vez 23 · de forma sostenida (5+ temporadas) 9
+Niveles de cantera (0/1/2/3): 0 / 14 / 20 / 6 · traspasos por temporada 35 · clubes en deuda máxima 0
+  cantera Básica  generados  661 · pot 85+ 0.9% · pot 90+ 0.0% · terminados  540 → Val 80+ 1.1% · 85+ 1 (0.2%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados 1443 · pot 85+ 23.7% · pot 90+ 4.8% · terminados 1148 → Val 80+ 17.2% · 85+ 50 (4.4%) · 90+ 5 (0.4%) · 95+ 0
+  cantera Máxima  generados  602 · pot 85+ 80.4% · pot 90+ 48.3% · terminados  464 → Val 80+ 56.7% · 85+ 168 (36.2%) · 90+ 49 (10.6%) · 95+ 2
+
+Todo dentro de los rangos.
+
+(2.7 s)
+=== Lifetime · 50 temporadas · liga esp · semilla 20260101 ===
+Clubes élite al empezar: Real Madrilia, FC Barcelonía, Atlético Madrileño, Real Sevillana
+Campeones distintos de 1.ª: 9
+
+--- Temporada 1 ---
+Val medio de titulares: 1.ª 81.5 (±4.3) · 2.ª 73.5
+Jugadores 85+: 54 (15.0% de 1.ª) · 90+: 3 (0.8%) · 95+: 0 (0.0%)  [de 720]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 157.5 M vs resto 10.2 M · prestigio 70 vs 21
+Grupo top-7 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 3 · no élite que llegaron alguna vez 3 · de forma sostenida (5+ temporadas) 0
+Niveles de cantera (0/1/2/3): 0 / 25 / 11 / 4 · traspasos por temporada 0 · clubes en deuda máxima 0
+  cantera Básica  generados   36 · pot 85+ 0.0% · pot 90+ 0.0% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados   31 · pot 85+ 25.8% · pot 90+ 3.2% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Máxima  generados   14 · pot 85+ 71.4% · pot 90+ 42.9% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+
+--- Temporada 20 ---
+Val medio de titulares: 1.ª 81.3 (±4.5) · 2.ª 74.9
+Jugadores 85+: 80 (16.8% de 1.ª) · 90+: 5 (1.1%) · 95+: 0 (0.0%)  [de 874]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 87.3 M vs resto 36.6 M · prestigio 89 vs 22
+Grupo top-9 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 5 · no élite que llegaron alguna vez 22 · de forma sostenida (5+ temporadas) 5
+Niveles de cantera (0/1/2/3): 0 / 14 / 20 / 6 · traspasos por temporada 37 · clubes en deuda máxima 0
+  cantera Básica  generados  459 · pot 85+ 1.3% · pot 90+ 0.0% · terminados  339 → Val 80+ 1.2% · 85+ 1 (0.3%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados  954 · pot 85+ 24.6% · pot 90+ 5.3% · terminados  678 → Val 80+ 15.3% · 85+ 23 (3.4%) · 90+ 3 (0.4%) · 95+ 0
+  cantera Máxima  generados  372 · pot 85+ 80.9% · pot 90+ 50.0% · terminados  257 → Val 80+ 53.3% · 85+ 93 (36.2%) · 90+ 29 (11.3%) · 95+ 2
+
+--- Temporada 50 ---
+Val medio de titulares: 1.ª 81.9 (±4.0) · 2.ª 74.7
+Jugadores 85+: 66 (13.9% de 1.ª) · 90+: 6 (1.1%) · 95+: 0 (0.0%)  [de 877]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 81.8 M vs resto 38.1 M · prestigio 94 vs 23
+Grupo top-9 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 5 · no élite que llegaron alguna vez 24 · de forma sostenida (5+ temporadas) 15
+Niveles de cantera (0/1/2/3): 0 / 14 / 15 / 11 · traspasos por temporada 33 · clubes en deuda máxima 0
+  cantera Básica  generados 1086 · pot 85+ 1.2% · pot 90+ 0.0% · terminados  965 → Val 80+ 1.2% · 85+ 1 (0.1%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados 2351 · pot 85+ 22.9% · pot 90+ 4.4% · terminados 2096 → Val 80+ 16.4% · 85+ 81 (3.9%) · 90+ 9 (0.4%) · 95+ 0
+  cantera Máxima  generados 1164 · pot 85+ 77.9% · pot 90+ 44.8% · terminados  982 → Val 80+ 57.6% · 85+ 340 (34.6%) · 90+ 92 (9.4%) · 95+ 4
+
+Todo dentro de los rangos.
+
+(4.0 s)
+=== Lifetime · 100 temporadas · liga esp · semilla 20260101 ===
+Clubes élite al empezar: Real Madrilia, FC Barcelonía, Atlético Madrileño, Real Sevillana
+Campeones distintos de 1.ª: 13
+
+--- Temporada 1 ---
+Val medio de titulares: 1.ª 81.5 (±4.3) · 2.ª 73.5
+Jugadores 85+: 54 (15.0% de 1.ª) · 90+: 3 (0.8%) · 95+: 0 (0.0%)  [de 720]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 157.5 M vs resto 10.2 M · prestigio 70 vs 21
+Grupo top-7 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 3 · no élite que llegaron alguna vez 3 · de forma sostenida (5+ temporadas) 0
+Niveles de cantera (0/1/2/3): 0 / 25 / 11 / 4 · traspasos por temporada 0 · clubes en deuda máxima 0
+  cantera Básica  generados   36 · pot 85+ 0.0% · pot 90+ 0.0% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados   31 · pot 85+ 25.8% · pot 90+ 3.2% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Máxima  generados   14 · pot 85+ 71.4% · pot 90+ 42.9% · terminados    0 → Val 80+ 0.0% · 85+ 0 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+
+--- Temporada 20 ---
+Val medio de titulares: 1.ª 81.3 (±4.5) · 2.ª 74.9
+Jugadores 85+: 80 (16.8% de 1.ª) · 90+: 5 (1.1%) · 95+: 0 (0.0%)  [de 874]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 87.3 M vs resto 36.6 M · prestigio 89 vs 22
+Grupo top-9 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 5 · no élite que llegaron alguna vez 22 · de forma sostenida (5+ temporadas) 5
+Niveles de cantera (0/1/2/3): 0 / 14 / 20 / 6 · traspasos por temporada 37 · clubes en deuda máxima 0
+  cantera Básica  generados  459 · pot 85+ 1.3% · pot 90+ 0.0% · terminados  339 → Val 80+ 1.2% · 85+ 1 (0.3%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados  954 · pot 85+ 24.6% · pot 90+ 5.3% · terminados  678 → Val 80+ 15.3% · 85+ 23 (3.4%) · 90+ 3 (0.4%) · 95+ 0
+  cantera Máxima  generados  372 · pot 85+ 80.9% · pot 90+ 50.0% · terminados  257 → Val 80+ 53.3% · 85+ 93 (36.2%) · 90+ 29 (11.3%) · 95+ 2
+
+--- Temporada 50 ---
+Val medio de titulares: 1.ª 81.9 (±4.0) · 2.ª 74.7
+Jugadores 85+: 66 (13.9% de 1.ª) · 90+: 6 (1.1%) · 95+: 0 (0.0%)  [de 877]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 81.8 M vs resto 38.1 M · prestigio 94 vs 23
+Grupo top-9 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 5 · no élite que llegaron alguna vez 24 · de forma sostenida (5+ temporadas) 15
+Niveles de cantera (0/1/2/3): 0 / 14 / 15 / 11 · traspasos por temporada 33 · clubes en deuda máxima 0
+  cantera Básica  generados 1086 · pot 85+ 1.2% · pot 90+ 0.0% · terminados  965 → Val 80+ 1.2% · 85+ 1 (0.1%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados 2351 · pot 85+ 22.9% · pot 90+ 4.4% · terminados 2096 → Val 80+ 16.4% · 85+ 81 (3.9%) · 90+ 9 (0.4%) · 95+ 0
+  cantera Máxima  generados 1164 · pot 85+ 77.9% · pot 90+ 44.8% · terminados  982 → Val 80+ 57.6% · 85+ 340 (34.6%) · 90+ 92 (9.4%) · 95+ 4
+
+--- Temporada 100 ---
+Val medio de titulares: 1.ª 82.8 (±4.2) · 2.ª 74.4
+Jugadores 85+: 98 (20.5% de 1.ª) · 90+: 10 (2.1%) · 95+: 0 (0.0%)  [de 897]
+95+ por club: máx 0 · clubes con alguno 0 · con dos 0 · por encima del tope 0
+Presupuesto medio: élite inicial 61.4 M vs resto 35.4 M · prestigio 91 vs 27
+Grupo top-10 (presupuesto o prestigio): élite inicial dentro 4 · no élite dentro ahora 6 · no élite que llegaron alguna vez 25 · de forma sostenida (5+ temporadas) 21
+Niveles de cantera (0/1/2/3): 0 / 14 / 16 / 10 · traspasos por temporada 28 · clubes en deuda máxima 0
+  cantera Básica  generados 2153 · pot 85+ 1.2% · pot 90+ 0.0% · terminados 2028 → Val 80+ 1.7% · 85+ 1 (0.0%) · 90+ 0 (0.0%) · 95+ 0
+  cantera Alta    generados 4338 · pot 85+ 22.7% · pot 90+ 4.5% · terminados 4102 → Val 80+ 17.3% · 85+ 157 (3.8%) · 90+ 17 (0.4%) · 95+ 0
+  cantera Máxima  generados 2894 · pot 85+ 78.4% · pot 90+ 44.2% · terminados 2686 → Val 80+ 57.4% · 85+ 885 (32.9%) · 90+ 207 (7.7%) · 95+ 10
+
+Todo dentro de los rangos.
+
+(6.7 s)

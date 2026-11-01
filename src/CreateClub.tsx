@@ -3,18 +3,21 @@ import type { Club, CrestShape } from './types'
 import {
   COLOR_PRESETS,
   CREST_SHAPES,
-  LEAGUE,
   START_BUDGET,
   START_DIVISION,
   formatMoney,
 } from './data'
 import Crest from './Crest'
+import { LEAGUES, LEAGUE_IDS, DEFAULT_LEAGUE, leagueDef } from './leagues'
+import type { LeagueId } from './leagues'
 
 interface Props {
   onCreate: (club: Club) => void
 }
 
 export default function CreateClub({ onCreate }: Props) {
+  const [leagueId, setLeagueId] = useState<LeagueId>(DEFAULT_LEAGUE)
+  const league = leagueDef(leagueId)
   const [name, setName] = useState('')
   const [city, setCity] = useState('')
   const [stadium, setStadium] = useState('')
@@ -28,7 +31,8 @@ export default function CreateClub({ onCreate }: Props) {
     e.preventDefault()
     if (!valid) return
     onCreate({
-      league: LEAGUE,
+      league: league.name,
+      leagueId,
       division: START_DIVISION,
       name: name.trim(),
       city: city.trim(),
@@ -51,7 +55,13 @@ export default function CreateClub({ onCreate }: Props) {
 
           <div className="field">
             <label htmlFor="league">Liga</label>
-            <input id="league" type="text" value={LEAGUE} disabled />
+            <select id="league" value={leagueId} onChange={(e) => setLeagueId(e.target.value as LeagueId)}>
+              {LEAGUE_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {LEAGUES[id].flag} {LEAGUES[id].name} · {LEAGUES[id].div1Name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="field">
@@ -152,9 +162,13 @@ export default function CreateClub({ onCreate }: Props) {
             <dt>Estadio</dt>
             <dd>{stadium.trim() || '—'}</dd>
             <dt>Liga</dt>
-            <dd>{LEAGUE}</dd>
+            <dd>
+              {league.flag} {league.name}
+            </dd>
             <dt>Categoría</dt>
-            <dd>{START_DIVISION}.ª división</dd>
+            <dd>
+              {START_DIVISION}.ª división · {league.div2Name}
+            </dd>
             <dt>Presupuesto inicial</dt>
             <dd>{formatMoney(START_BUDGET)}</dd>
           </dl>

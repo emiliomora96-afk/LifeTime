@@ -1,0 +1,23 @@
+/* ---------- Campo (suave: que resalten los jugadores y sus tarjetas, no el césped) ---------- */
+.pitch.pitch-anime {
+  background: #2b6843;
+  border: 1px solid #3d7a55;
+  border-radius: 14px;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.25);
+  aspect-ratio: 4 / 5.5; /* más alto que antes: los jugadores quedan separados */
+}
+.pitch.pitch-anime::before, .pitch.pitch-anime::after { display: none; }
+.pitch-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.pitch-art svg { display: block; width: 100%; height: 100%; }
+
+/* sombra suave bajo cada jugador: lo despega del césped */
+.pitch-anime .token-badge::before {
+  content: ''; position: absolute; left: 6%; right: 6%; bottom: -8px; height: 14px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(ellipse at center, rgba(0, 14, 6, 0.55), rgba(0, 14, 6, 0) 70%);
+}
+/* placa del nombre: contraste alto sobre un verde de poco contraste */
+.pitch-anime .token-name {
+  margin-top: 6px; padding: 1px 8px 2px; border-radius: 7px; max-width: 100%;
+  background: rgba(10, 18, 36, 0.78);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3); text-shadow: 0 1px 2px #000; letter-spacing: 0.01em;
+}

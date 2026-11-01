@@ -1,7 +1,10 @@
 import './market.css'
+import PlayerChip from './PlayerChip'
+import ScoutPanel from './ScoutPanel'
 import { useState } from 'react'
 import PageHead from './PageHead'
-import type { GameState } from './game'
+import type { Club } from './types'
+import type { GameState, ScoutOrder } from './game'
 import { LEVEL_NAMES } from './config'
 import { formatMoney } from './data'
 import { getUserSquad } from './engine'
@@ -9,15 +12,17 @@ import { ACADEMY_MAX_AGE, academyCapacity, intakeSize } from './academy'
 import { phaseOf, playerSalary, potentialLabel } from './players'
 import type { SimPlayer } from './players'
 import { MAX_SQUAD } from './squads'
-import { PHASES } from './playerView'
+import { PHASES, deltaClass, deltaText } from './playerView'
 
 interface Props {
+  club: Club
   game: GameState
   onPromote: (player: SimPlayer) => void
   onRelease: (player: SimPlayer) => void
+  onScout: (order: ScoutOrder) => void
 }
 
-export default function Academy({ game, onPromote, onRelease }: Props) {
+export default function Academy({ club, game, onPromote, onRelease, onScout }: Props) {
   const [confirm, setConfirm] = useState<string | null>(null)
 
   const level = game.investments.academy
@@ -92,15 +97,23 @@ export default function Academy({ game, onPromote, onRelease }: Props) {
                       <span className="pos">{p.pos}</span>
                     </td>
                     <td>
-                      {p.name}
-                      {p.nat ? <span className="nat-code"> {p.nat}</span> : null}
-                      {lastYear ? <span className="tag last"> Último año</span> : null}
+                      <span className="name-cell">
+                        <PlayerChip player={p} />
+                        <span>
+                          {p.name}
+                          {p.nat ? <span className="nat-code"> {p.nat}</span> : null}
+                          {lastYear ? <span className="tag last"> Último año</span> : null}
+                        </span>
+                      </span>
                     </td>
-                    <td className="num">{p.age}</td>
-                    <td className="num">{p.rating}</td>
-                    <td className="num">{potentialLabel(p)}</td>
-                    <td className={phase.cls}>{phase.label}</td>
-                    <td className="num">{formatMoney(playerSalary(p))}</td>
+                    <td className="num" data-label="Edad">{p.age}</td>
+                    <td className="num" data-label="Val.">
+                      {p.rating}
+                      {deltaText(p.lastGain) && <span className={deltaClass(p.lastGain)}>{deltaText(p.lastGain)}</span>}
+                    </td>
+                    <td className="num" data-label="Potencial">{potentialLabel(p)}</td>
+                    <td className={phase.cls} data-label="Fase">{phase.label}</td>
+                    <td className="num" data-label="Sueldo si sube">{formatMoney(playerSalary(p))}</td>
                     <td className="num">
                       <div className="row-btns">
                         <button
@@ -120,6 +133,7 @@ export default function Academy({ game, onPromote, onRelease }: Props) {
                           {confirm === outKey ? '¿Seguro?' : 'Liberar'}
                         </button>
                       </div>
+                      {squadFull ? <small className="blocker">Plantilla llena ({MAX_SQUAD})</small> : null}
                     </td>
                   </tr>
                 )
@@ -140,6 +154,8 @@ export default function Academy({ game, onPromote, onRelease }: Props) {
           significa más plazas y mejor potencial (se cambia en Finanzas).
         </p>
       </div>
+
+      <ScoutPanel club={club} game={game} onScout={onScout} />
     </div>
   )
 }

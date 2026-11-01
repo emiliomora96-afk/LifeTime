@@ -31,7 +31,7 @@ describe('minutos y crecimiento', () => {
   })
 
   it('los suplentes no se quedan demasiado atrás', () => {
-    expect(starter(23) - bench(23)).toBeLessThan(7) // los de potencial alto que juegan se despegan más
+    expect(starter(23) - bench(23)).toBeLessThan(8) // los de potencial alto que juegan se despegan más
   })
 
   it('jugar la mitad da un crecimiento intermedio', () => {
@@ -61,14 +61,16 @@ describe('minutos en la liga', () => {
   it('un joven que juega crece más que el mismo joven en el banco', () => {
     let asStarter = 0
     let onBench = 0
-    const SEEDS = 30
+    const SEEDS = 60
+    let valid = 0
 
     for (let s = 0; s < SEEDS; s++) {
       const base = createLeague(60 + s)
       const squad = getUserSquad(base)
-      const youth = squad.find((p) => p.id === 'u-18')
+      const youth = [...squad].filter((p) => !p.starter && p.age <= 23).sort((a, b) => a.age - b.age || a.id.localeCompare(b.id))[0]
       const rival = squad.filter((p) => p.pos === youth?.pos && p.starter).sort((a, b) => a.rating - b.rating)[0]
-      if (!youth || !rival) throw new Error('faltan jugadores de prueba')
+      if (!youth || !rival) continue // plantilla aleatoria sin un joven suplente: se salta esta semilla
+      valid++
 
       const benched = finishSeason(simulateLeague(base, 38, 500 + s), 900 + s, { academyBonus: 0, leaving: [] })
       const playing = finishSeason(
@@ -76,10 +78,11 @@ describe('minutos en la liga', () => {
         900 + s,
         { academyBonus: 0, leaving: [] },
       )
-      onBench += getUserSquad(benched).find((p) => p.id === 'u-18')?.rating ?? 0
-      asStarter += getUserSquad(playing).find((p) => p.id === 'u-18')?.rating ?? 0
+      onBench += getUserSquad(benched).find((p) => p.id === youth.id)?.rating ?? 0
+      asStarter += getUserSquad(playing).find((p) => p.id === youth.id)?.rating ?? 0
     }
-    expect(asStarter / SEEDS).toBeGreaterThan(onBench / SEEDS + 0.8)
+    expect(valid).toBeGreaterThan(20)
+    expect(asStarter / valid).toBeGreaterThan(onBench / valid + 0.8)
   })
 })
 

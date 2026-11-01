@@ -1,0 +1,48 @@
+/* ---------- Panel de cambio con tarjetas (solo móvil) ---------- */
+.swap-picker { display: none; }
+
+@media (max-width: 800px) {
+  .swap-picker {
+    display: flex; flex-direction: column; gap: 10px;
+    position: fixed; left: 8px; right: 8px; z-index: 45; padding: 12px;
+    bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    max-height: min(68vh, 560px);
+    background: var(--panel); border: 1px solid var(--accent); border-radius: 14px;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.55);
+    animation: ficha-up 0.18s ease-out;
+  }
+  /* Mientras eliges el cambio, la ficha del jugador se esconde para no tapar nada */
+  .ficha.swapping:not(.ficha-empty) { display: none; }
+
+  .swap-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .swap-head > div { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+  .swap-head strong { font-size: 0.95rem; }
+  .swap-head span { font-size: 0.74rem; color: var(--muted); }
+  .swap-cancel {
+    flex: none; min-height: 40px; padding: 0 14px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--text); border: 1px solid var(--border);
+  }
+  .swap-empty { margin: 4px 0; color: var(--muted); font-size: 0.85rem; text-align: center; }
+
+  .swap-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+    overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: 2px;
+  }
+  .swap-card {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 10px 6px 8px;
+    background: var(--bg); color: var(--text); font: inherit; cursor: pointer;
+    border: 1px solid rgba(34, 197, 94, 0.55); border-radius: 12px;
+    box-shadow: inset 0 0 14px rgba(34, 197, 94, 0.08);
+  }
+  .swap-card:active { background: rgba(34, 197, 94, 0.16); }
+  .swap-face { display: block; width: 76px; height: 76px; }
+  .swap-name { max-width: 100%; font-weight: 700; font-size: 0.9rem; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .swap-role { font-size: 0.68rem; color: var(--muted); }
+  .swap-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 100%; margin-top: 2px; }
+  .swap-stats > span {
+    display: flex; flex-direction: column; align-items: center; padding: 4px 0;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .swap-stats b { font-size: 1rem; line-height: 1.1; }
+  .swap-stats small { font-size: 0.52rem; letter-spacing: 0.06em; color: var(--muted); }
+}
