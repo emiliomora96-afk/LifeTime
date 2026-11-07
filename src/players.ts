@@ -4,7 +4,7 @@ import { clamp, normal, pickWeighted } from './rng'
 import type { NatId, NatPool } from './nations'
 import { randomIdentity, talentBonus } from './nations'
 import { academyPool, giantPool, homePool } from './activeLeague'
-import { ACADEMY_ENTRY_AGE, ACADEMY_TIERS, CANTERANO_EVENTS, DECLINE, DEVELOPMENT, MARKET, SALARY, SIGNING } from './lifetimeConfig'
+import { ACADEMY_ENTRY_AGE, ACADEMY_TIERS, CANTERANO_EVENTS, DECLINE, DEVELOPMENT, MARKET, SALARY, SIGNING, VAL_LIMITS } from './lifetimeConfig'
 
 /* ---------- Jugador ---------- */
 export interface SimPlayer {
@@ -389,5 +389,7 @@ export function marketValue(p: SimPlayer): number {
   const base = MARKET.scale * Math.pow(Math.max(0, effective - MARKET.ref), MARKET.exponent)
   const decayFrom = declineStartAge(p.pos) - MARKET.ageGrace
   const ageFactor = p.age > decayFrom ? Math.max(MARKET.ageFloor, 1 - (p.age - decayFrom) * MARKET.ageSlope) : 1
-  return Math.max(MARKET.minValue, Math.round((base * ageFactor) / 10_000) * 10_000)
+  // Superestrellas: si el Val actual o el valor efectivo (Val + potencial) llega al nivel de estrella, cuestan más
+  const star = p.rating >= VAL_LIMITS.topStarRating || effective >= VAL_LIMITS.topStarRating ? VAL_LIMITS.topStarPremium : 1
+  return Math.max(MARKET.minValue, Math.round((base * ageFactor * star) / 10_000) * 10_000)
 }

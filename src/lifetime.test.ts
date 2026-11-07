@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from './rng'
 import { newCanterano, progressPlayer, marketValue, playerSalary } from './players'
 import type { SimPlayer } from './players'
-import { limitTopStars } from './squads'
 import { ACADEMY_TIERS, CANTERANO_EVENTS, DECLINE, VAL_LIMITS, VAL_TARGETS } from './lifetimeConfig'
 import { runLifetimeSim } from './lifetimeSim'
 
@@ -111,11 +110,18 @@ describe('mercado y sueldos', () => {
   })
 })
 
-describe('tope de superestrellas por club', () => {
-  it('no hay más de maxTopStarsPerClub jugadores de 95+ en un club', () => {
-    const squad = Array.from({ length: 5 }, (_, i) => ({ id: `s${i}`, name: 's', pos: 'DEL' as const, age: 27, rating: 95 + (i % 3), peak: 97, potBias: 0, starter: true }))
-    const out = limitTopStars(squad)
-    expect(out.filter((p) => p.rating >= VAL_LIMITS.topStarRating)).toHaveLength(VAL_LIMITS.maxTopStarsPerClub)
+describe('superestrellas (sin tope por club, pero más caras)', () => {
+  const mk = (rating: number, peak = rating): SimPlayer => ({ id: 'x', name: 'x', pos: 'DEL', age: 27, rating, peak, potBias: 0, starter: true })
+  it('un club puede tener más de dos jugadores de 95+ (sin tope)', () => {
+    expect('maxTopStarsPerClub' in VAL_LIMITS).toBe(false)
+  })
+  it('a partir de 95 el precio de mercado sube un 30 %', () => {
+    const base = marketValue(mk(94)) // sin sobrecosto
+    const star = marketValue(mk(95))
+    const noPremium = Math.round((star / VAL_LIMITS.topStarPremium) / 10_000) * 10_000
+    expect(VAL_LIMITS.topStarPremium).toBe(1.3)
+    expect(star).toBeGreaterThan(base * 1.3)
+    expect(Math.abs(noPremium * VAL_LIMITS.topStarPremium - star)).toBeLessThanOrEqual(10_000)
   })
 })
 
@@ -128,7 +134,6 @@ describe('simulación de validación (30 temporadas)', () => {
       expect(c.div1Mean).toBeLessThanOrEqual(VAL_TARGETS.div1StartersMean[1])
       expect(c.div2Mean).toBeGreaterThanOrEqual(VAL_TARGETS.div2StartersMean[0])
       expect(c.div2Mean).toBeLessThanOrEqual(VAL_TARGETS.div2StartersMean[1])
-      expect(c.clubs95.over).toBe(0)
     }
     const last = r.checkpoints[2]
     expect(last.budgetEliteStart).toBeGreaterThan(last.budgetRest) // el élite sigue por delante en dinero

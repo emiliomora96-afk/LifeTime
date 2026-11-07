@@ -45,7 +45,7 @@ export interface Checkpoint {
   share85: number // % de jugadores de 1.ª
   share90: number
   share95: number
-  clubs95: { max: number; withAny: number; withTwo: number; over: number } // 95+ por club
+  clubs95: { max: number; withAny: number; withTwo: number } // 95+ por club
   budgetEliteStart: number // presupuesto medio de los clubes que empezaron como élite
   budgetRest: number
   prestigeEliteStart: number
@@ -225,7 +225,6 @@ export function runLifetimeSim(opts: SimOptions): LifetimeReport {
         max: Math.max(0, ...per95),
         withAny: per95.filter((n) => n >= 1).length,
         withTwo: per95.filter((n) => n >= 2).length,
-        over: per95.filter((n) => n > VAL_LIMITS.maxTopStarsPerClub).length,
       },
       budgetEliteStart: mean(eliteTeams.map((t) => t.budget ?? 0)),
       budgetRest: mean(rest.map((t) => t.budget ?? 0)),
@@ -290,7 +289,6 @@ export function warningsFor(checkpoints: Checkpoint[]): string[] {
     if (c.share85 < VAL_TARGETS.share85[0] || c.share85 > VAL_TARGETS.share85[1]) out.push(`T${c.season}: 85+ en 1.ª = ${(c.share85 * 100).toFixed(1)} % (objetivo poco comunes)`)
     if (c.share90 > VAL_TARGETS.share90[1]) out.push(`T${c.season}: 90+ en 1.ª = ${(c.share90 * 100).toFixed(1)} % (deben ser muy raros)`)
     if (c.share95 > VAL_TARGETS.share95[1]) out.push(`T${c.season}: 95+ en 1.ª = ${(c.share95 * 100).toFixed(2)} % (deben ser rarísimos)`)
-    if (c.clubs95.over > 0) out.push(`T${c.season}: ${c.clubs95.over} clubes con más de ${VAL_LIMITS.maxTopStarsPerClub} jugadores de ${VAL_LIMITS.topStarRating}+`)
   }
   return out
 }
@@ -309,7 +307,7 @@ export function formatReport(r: LifetimeReport): string {
     L.push(`--- Temporada ${c.season} ---`)
     L.push(`Val medio de titulares: 1.ª ${c.div1Mean.toFixed(1)} (±${c.div1Spread.toFixed(1)}) · 2.ª ${c.div2Mean.toFixed(1)}`)
     L.push(`Jugadores 85+: ${c.n85} (${P(c.share85)} de 1.ª) · 90+: ${c.n90} (${P(c.share90)}) · 95+: ${c.n95} (${P(c.share95)})  [de ${c.players}]`)
-    L.push(`95+ por club: máx ${c.clubs95.max} · clubes con alguno ${c.clubs95.withAny} · con dos ${c.clubs95.withTwo} · por encima del tope ${c.clubs95.over}`)
+    L.push(`95+ por club: máx ${c.clubs95.max} · clubes con alguno ${c.clubs95.withAny} · con dos o más ${c.clubs95.withTwo}`)
     L.push(`Presupuesto medio: élite inicial ${M(c.budgetEliteStart)} vs resto ${M(c.budgetRest)} · prestigio ${c.prestigeEliteStart.toFixed(0)} vs ${c.prestigeRest.toFixed(0)}`)
     L.push(`Grupo top-${c.topGroup.size} (presupuesto o prestigio): élite inicial dentro ${c.topGroup.eliteStartInTop} · no élite dentro ahora ${c.topGroup.nonEliteNow} · no élite que llegaron alguna vez ${c.topGroup.nonEliteEver} · de forma sostenida (${SIM.sustainedSeasons}+ temporadas) ${c.topGroup.nonEliteSustained}`)
     L.push(`Niveles de cantera (0/1/2/3): ${c.academyLevels.join(' / ')} · traspasos por temporada ${c.transfersPerSeason.toFixed(0)} · clubes en deuda máxima ${c.bankrupt}`)

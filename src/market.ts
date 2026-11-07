@@ -4,11 +4,11 @@ import type { LeagueState, Level, SimTeam } from './engine'
 import { USER_ID, getUserSquad } from './engine'
 import type { SimPlayer } from './players'
 import { marketValue, newSigning } from './players'
-import { MAX_SQUAD, FORMATION_COUNT, SQUAD_TEMPLATE, pickStarters, repairStarters, squadStrength, topStarCount } from './squads'
+import { MAX_SQUAD, FORMATION_COUNT, SQUAD_TEMPLATE, pickStarters, repairStarters, squadStrength } from './squads'
 import type { Position } from './sample'
 import { createRng, mixSeed, pickOne, shuffle } from './rng'
 import { GIANT_PREMIUM, askingPriceFor, fillLevel, leagueMean } from './aiclubs'
-import { MARKET, VAL_LIMITS } from './lifetimeConfig'
+import { MARKET } from './lifetimeConfig'
 import type { Rng } from './rng'
 
 /* ---------- Mercado de fichajes ---------- */
@@ -87,9 +87,6 @@ export function buyBlocker(game: GameState, budget: number, listing: Listing): s
   if (!marketOpen(game)) return 'El mercado está cerrado'
   const mine = getUserSquad(game.league)
   if (mine.length >= MAX_SQUAD) return `Plantilla llena (${MAX_SQUAD})`
-  if (listing.player.rating >= VAL_LIMITS.topStarRating && topStarCount(mine) >= VAL_LIMITS.maxTopStarsPerClub) {
-    return `Un club no puede tener más de ${VAL_LIMITS.maxTopStarsPerClub} jugadores de ${VAL_LIMITS.topStarRating}+`
-  }
   if (budget < listing.price) return 'No alcanza el presupuesto'
   if (!listMarket(game.league).some((l) => l.player.id === listing.player.id)) return 'Ya no está disponible'
   return null

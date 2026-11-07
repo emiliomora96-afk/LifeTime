@@ -12,8 +12,8 @@ export type SeasonOption = (typeof SEASON_OPTIONS)[number]
 /* ---------- 1. Distribución general de Val ---------- */
 export const VAL_LIMITS = {
   maxRating: 99, // Val máximo posible
-  topStarRating: 95, // desde este Val un jugador cuenta como "superestrella"
-  maxTopStarsPerClub: 2, // máximo de superestrellas (>= topStarRating) por club. Sin tope por categoría de club.
+  topStarRating: 95, // desde este Val un jugador cuenta como "superestrella" (ya no hay tope por club)
+  topStarPremium: 1.3, // las superestrellas cuestan un 30 % más (precio de mercado). 1 = sin sobrecosto
 }
 
 // Rangos objetivo (los usa la validación para avisar si algo se sale)
@@ -23,7 +23,7 @@ export const VAL_TARGETS = {
   // "poco comunes / muy raros", como porcentaje de los jugadores de plantilla de 1.ª división
   share85: [0.04, 0.25] as [number, number], // 85+ poco comunes
   share90: [0, 0.04] as [number, number], // 90+ muy raros
-  share95: [0, 0.01] as [number, number], // 95+ rarísimos
+  share95: [0, 0.05] as [number, number], // 95+ rarísimos (hasta 5 % de 1.ª)
 }
 
 /* ---------- 1b. Punto de partida de los clubes ---------- */

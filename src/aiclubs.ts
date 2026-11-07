@@ -29,9 +29,7 @@ import {
   pickStarters,
   progressSquad,
   squadStrength,
-  topStarCount,
 } from './squads'
-import { VAL_LIMITS } from './lifetimeConfig'
 
 /* ==========================================================================
    Paso 10: los clubes de la IA viven con las mismas reglas que el tuyo.
@@ -342,8 +340,6 @@ export function aiTransferWindow(input: SimTeam[], rng: Rng, o: WindowOptions): 
         if (seller.id === buyer.id) continue
         for (const p of seller.squad) {
           if (p.age >= 33 || moved.has(p.id)) continue
-          // Máximo de superestrellas por club: no ficha a otra si ya tiene el máximo
-          if (p.rating >= VAL_LIMITS.topStarRating && topStarCount(buyer.squad) >= VAL_LIMITS.maxTopStarsPerClub) continue
           const price = askingPriceFor(p, seller)
           if (price > spendable) continue
           if (cap !== undefined && wages + playerSalary(p) > cap) continue // sus sueldos no lo aguantan

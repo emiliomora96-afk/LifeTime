@@ -68,15 +68,6 @@ export function repairStarters(squad: SimPlayer[]): SimPlayer[] {
   return squad.map((p) => ({ ...p, starter: chosen.has(p.id) }))
 }
 
-// Máximo de superestrellas (Val 95+) por club: las que sobran se quedan en 94. No hay tope por categoría de club.
-export function limitTopStars(squad: SimPlayer[]): SimPlayer[] {
-  const top = squad.filter((p) => p.rating >= VAL_LIMITS.topStarRating).sort(byRating)
-  if (top.length <= VAL_LIMITS.maxTopStarsPerClub) return squad
-  const demoted = new Set(top.slice(VAL_LIMITS.maxTopStarsPerClub).map((p) => p.id))
-  const cap = VAL_LIMITS.topStarRating - 1
-  return squad.map((p) => (demoted.has(p.id) ? { ...p, rating: cap, peak: Math.min(p.peak, cap) } : p))
-}
-
 export function topStarCount(squad: SimPlayer[]): number {
   return squad.filter((p) => p.rating >= VAL_LIMITS.topStarRating).length
 }
@@ -119,12 +110,10 @@ export function placeholderSquad(
   const picked = pickStarters(players)
   const delta = Math.round(level - squadStrength(picked))
   return pickStarters(
-    limitTopStars(
-      picked.map((p) => {
-        const rating = clamp(p.rating + delta, 35, 99)
-        return { ...p, rating, peak: Math.max(rating, clamp(p.peak + delta, 55, 99)) }
-      }),
-    ),
+    picked.map((p) => {
+      const rating = clamp(p.rating + delta, 35, 99)
+      return { ...p, rating, peak: Math.max(rating, clamp(p.peak + delta, 55, 99)) }
+    }),
   )
 }
 
@@ -178,7 +167,6 @@ export function progressSquad(squad: SimPlayer[], o: ProgressOptions, rng: Rng):
       list.push(o.useYouth ? newYouth(id, pos, o.level, o.youthBonus, rng) : newSigning(id, pos, o.level, rng))
     }
   }
-  // Rellenar huecos puede pasar el máximo: se recorta otra vez
-  list = limitTopStars(prune(list))
+  list = prune(list)
   return o.keepLineup ? repairStarters(list) : pickStarters(list)
 }
