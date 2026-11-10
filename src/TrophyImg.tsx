@@ -6,12 +6,13 @@ import supercup from './assets/trophies/supercopa-continental.png'
 import liga from './assets/trophies/liga-espana.png'
 import copa from './assets/trophies/copa-del-rey.png'
 import supercopa from './assets/trophies/supercopa-espana.png'
+import balon from './assets/trophies/balon-de-oro.png'
 import { aspectOf } from './trophyAspect'
 import type { TrophyId } from './trophyAspect'
 import { activeLeague } from './activeLeague'
 
 // Trofeos europeos y los de España (imágenes ya hechas)
-const SRC: Record<TrophyId, string> = { champions, europa, conferencia, supercup, liga, copa, supercopa }
+const SRC: Record<TrophyId, string> = { champions, europa, conferencia, supercup, liga, copa, supercopa, balon }
 
 // Trofeos de las demás ligas: se leen solos de la carpeta assets/trophies con el nombre <liga>-liga.png,
 // <liga>-copa.png y <liga>-supercopa.png (ing, ita, ale, fra). Si todavía no existe el archivo, se dibuja uno provisional.

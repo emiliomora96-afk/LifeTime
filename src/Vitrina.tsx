@@ -4,6 +4,7 @@ import type { EuropeId } from './europe'
 import { europeInfo } from './europe'
 import { COPA, SUPERCOPA } from './domestic'
 import { activeLeague } from './activeLeague'
+import { BALON } from './balonDeOro'
 import TrophyImg from './TrophyImg'
 import { aspectOf } from './trophyAspect'
 import type { TrophyId } from './trophyAspect'
@@ -20,6 +21,8 @@ interface Slot {
   name: string
   count: number
   note?: string
+  unit?: [string, string] // cómo se llama cada pieza (por defecto: título / títulos)
+  winners?: { name: string; season: number }[] // quién ganó cada pieza y en qué temporada (se ve bajo el trofeo)
 }
 
 interface Shelf {
@@ -28,6 +31,7 @@ interface Shelf {
 }
 
 const MAX_SHOWN = 5 // trofeos que se dibujan por hueco
+const MAX_WINNERS = 6 // ganadores que se listan bajo un trofeo individual (los más recientes)
 const MAX_HEIGHT = 124 // alto de un trofeo solo
 const ROOM = 250 // ancho disponible por hueco (los trofeos se reducen para caber)
 const OVERLAP = 0.4 // parte del ancho que tapa el trofeo siguiente
@@ -57,12 +61,24 @@ function buildShelves(l: Legacy): Shelf[] {
         { id: 'supercopa', name: SUPERCOPA.name, count: l.supercopaTitles },
       ],
     },
+    {
+      title: 'Premios individuales',
+      slots: [
+        {
+          id: 'balon',
+          name: BALON.name,
+          count: l.balonWins.length,
+          unit: ['premio', 'premios'],
+          winners: l.balonWins.map((w) => ({ name: w.name, season: w.season })),
+        },
+      ],
+    },
   ]
 }
 
-function titlesText(n: number): string {
+function titlesText(n: number, unit: [string, string] = ['título', 'títulos']): string {
   if (n === 0) return 'Sin ganar'
-  return n === 1 ? '1 título' : `${n} títulos`
+  return n === 1 ? `1 ${unit[0]}` : `${n} ${unit[1]}`
 }
 
 function SlotView({ slot }: { slot: Slot }) {
@@ -81,7 +97,7 @@ function SlotView({ slot }: { slot: Slot }) {
         ) : (
           Array.from({ length: shown }, (_, i) => (
             <span key={i} className="vt-piece" style={{ marginLeft: i === 0 ? 0 : step - w, zIndex: i + 1 }}>
-              <TrophyImg id={slot.id} height={h} label={i === 0 ? `${slot.name}: ${titlesText(slot.count)}` : ''} />
+              <TrophyImg id={slot.id} height={h} label={i === 0 ? `${slot.name}: ${titlesText(slot.count, slot.unit)}` : ''} />
             </span>
           ))
         )}
@@ -89,8 +105,19 @@ function SlotView({ slot }: { slot: Slot }) {
       </div>
       <div className="vt-plate">
         <strong>{slot.name}</strong>
-        <span>{titlesText(slot.count)}</span>
+        <span>{titlesText(slot.count, slot.unit)}</span>
         {slot.note && <em>{slot.note}</em>}
+        {slot.winners && slot.winners.length > 0 && (
+          <ul className="vt-winners">
+            {[...slot.winners].reverse().slice(0, MAX_WINNERS).map((w) => (
+              <li key={w.season}>
+                <b>{w.name}</b>
+                <i>Temporada {w.season}</i>
+              </li>
+            ))}
+            {slot.winners.length > MAX_WINNERS && <li className="vt-winners-more">y {slot.winners.length - MAX_WINNERS} más</li>}
+          </ul>
+        )}
       </div>
     </div>
   )

@@ -253,7 +253,7 @@ export default function App() {
       case 'directiva':
         return <Board club={c} />
       case 'estadisticas':
-        return <Stats club={c} league={game.league} />
+        return <Stats club={c} league={game.league} game={game} />
       case 'legado':
         return <LegacyScreen club={c} game={game} onImport={handleImport} onNewGame={handleReset} />
     }

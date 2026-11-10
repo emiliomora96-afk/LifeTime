@@ -1,0 +1,34 @@
+warning: in the working copy of 'tsconfig.app.json', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/tsconfig.app.json b/tsconfig.app.json[m
+[1mindex a65dbce..b16aa25 100644[m
+[1m--- a/tsconfig.app.json[m
+[1m+++ b/tsconfig.app.json[m
+[36m@@ -1,21 +1,21 @@[m
+[31m-{[m
+[32m+[m[32m﻿{[m
+   "compilerOptions": {[m
+     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",[m
+     "target": "ES2022",[m
+     "useDefineForClassFields": true,[m
+     "lib": ["ES2022", "DOM", "DOM.Iterable"],[m
+     "module": "ESNext",[m
+[31m-    "types": ["vite/client"],[m
+     "skipLibCheck": true,[m
+[31m-[m
+     "moduleResolution": "bundler",[m
+     "allowImportingTsExtensions": true,[m
+[32m+[m[32m    "verbatimModuleSyntax": true,[m
+     "moduleDetection": "force",[m
+     "noEmit": true,[m
+     "jsx": "react-jsx",[m
+[31m-[m
+[31m-    "strict": true[m
+[32m+[m[32m    "strict": true,[m
+[32m+[m[32m    "noUnusedLocals": true,[m
+[32m+[m[32m    "noUnusedParameters": true,[m
+[32m+[m[32m    "noFallthroughCasesInSwitch": true[m
+   },[m
+[31m-  "include": ["src"],[m
+[31m-  "exclude": ["src/**/*.cli.ts"][m
+[32m+[m[32m  "include": ["src"][m
+ }[m

@@ -8,6 +8,7 @@ import { formatMoney } from './data'
 import { legendScore } from './game'
 import { activeLeague } from './activeLeague'
 import type { GameState, Legend, SeasonRecord } from './game'
+import { BALON, balonWinner } from './balonDeOro'
 
 /* ==========================================================================
    Paso 10: legado. Todo sale del historial de la partida (game.history y game.legends),
@@ -31,6 +32,7 @@ export interface Legacy {
   copaFinals: number // finales de Copa jugadas (ganadas o perdidas)
   supercopaTitles: number
   supercopaFinals: number
+  balonWins: { season: number; name: string; pos: string }[] // Balones de Oro ganados por jugadores de tu club
   bestSeason: SeasonRecord | null // la temporada con más puntos en 1.ª
   firstTitle: { season: number; label: string } | null
   legends: Legend[]
@@ -83,6 +85,10 @@ export function buildLegacy(game: GameState): Legacy {
   const copaFinals = h.filter((r) => r.copa && (r.copa.champion || r.copa.reach === 'final')).length
   const supercopaTitles = h.filter((r) => r.supercopa?.champion).length
   const supercopaFinals = h.filter((r) => r.supercopa && (r.supercopa.champion || r.supercopa.reach === 'final')).length
+  const balonWins = h.flatMap((r) => {
+    const w = balonWinner(r.balon)
+    return w && w.club === null ? [{ season: r.season, name: w.name, pos: w.pos }] : []
+  })
   const firstDiv = h.filter((r) => r.division === 1)
   const bestSeason = firstDiv.length ? [...firstDiv].sort((a, b) => b.points - a.points)[0] : null
   const legends = Object.values(game.legends).sort((a, b) => legendScore(b) - legendScore(a) || a.name.localeCompare(b.name))
@@ -121,6 +127,7 @@ export function buildLegacy(game: GameState): Legacy {
     copaFinals,
     supercopaTitles,
     supercopaFinals,
+    balonWins,
     bestSeason,
     firstTitle,
     legends,
@@ -143,6 +150,7 @@ export function legacyText(club: Club, game: GameState, budget: number): string 
   if (l.euroTitleCount === 0) lines.push(`🌍 Títulos europeos: 0${l.euroFinals ? ` (${l.euroFinals} ${l.euroFinals === 1 ? 'final' : 'finales'})` : ''}`)
   lines.push(`${COPA.icon} ${COPA.name}: ${l.copaTitles}${l.copaFinals > l.copaTitles ? ` (${l.copaFinals - l.copaTitles} ${l.copaFinals - l.copaTitles === 1 ? 'final perdida' : 'finales perdidas'})` : ''}`)
   lines.push(`${SUPERCOPA.icon} ${SUPERCOPA.name}: ${l.supercopaTitles}`)
+  lines.push(`🏅 ${BALON.name}: ${l.balonWins.length}`)
   lines.push(`📈 Ascensos: ${l.promotions} · Descensos: ${l.relegations}`)
   if (l.bestPosition) lines.push(`🥇 Mejor puesto en 1.ª: ${l.bestPosition}.º`)
   const top = l.legends.slice(0, 3)

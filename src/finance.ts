@@ -15,6 +15,7 @@ import {
   TICKETS_BASE,
   TICKETS_PER_STADIUM_LEVEL,
   TV_RIGHTS,
+  sponsorPrestige,
 } from './economy'
 
 export interface Line {
@@ -30,7 +31,7 @@ export function seasonIncome(game: GameState): Line[] {
 
   const lines: Line[] = [
     { label: 'Entradas', amount: TICKETS_BASE[level] + TICKETS_PER_STADIUM_LEVEL[level] * game.investments.stadium },
-    { label: 'Patrocinios', amount: SPONSOR_BASE[level] + SPONSOR_PER_PRESTIGE * game.prestige },
+    { label: 'Patrocinios', amount: SPONSOR_BASE[level] + SPONSOR_PER_PRESTIGE * sponsorPrestige(game.prestige) },
     { label: 'Derechos de TV', amount: TV_RIGHTS[level] },
     { label: 'Premio por posición', amount: Math.max(0, 21 - position) * POSITION_PRIZE_STEP[level] },
     { label: 'Otros', amount: OTHER_INCOME[level] },

@@ -59,3 +59,49 @@
 
 .vt-extra { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 10px 6px 2px; font-size: 0.82rem; color: var(--muted); }
 .vt-extra strong { color: var(--text); }
+
+/* Premios individuales: quién ganó cada pieza y en qué temporada, bajo el trofeo */
+.vt-winners { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.vt-winners li { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.vt-winners b { font-size: 0.84rem; color: var(--text); }
+.vt-winners i { font-size: 0.72rem; font-style: normal; color: #fbbf24; }
+.vt-winners .vt-winners-more { font-size: 0.72rem; color: var(--muted); padding-top: 2px; }
+.vt-slot[data-won='true'] .vt-plate .vt-winners b { font-weight: 700; }
+
+/* ---------- Lifetime Balón de Oro: entrega en la gala y historial en Estadísticas ---------- */
+.bo-hero { display: flex; align-items: center; gap: 18px; padding: 10px 6px 12px; }
+.bo-hero .trophy-img { flex: none; filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.45)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); }
+.bo-hero-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bo-kicker { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fbbf24; }
+.bo-winner { font-size: 1.35rem; line-height: 1.15; overflow-wrap: anywhere; }
+.bo-sub { font-size: 0.86rem; color: var(--muted); }
+.bo-stats { font-size: 0.84rem; color: var(--muted); }
+.bo-stats b { color: #fbbf24; }
+.bo-hero[data-mine='true'] .bo-winner { color: #fbbf24; }
+.bo-mine { margin: 2px 0 10px; padding: 8px 12px; border-radius: 10px; font-weight: 700; color: #1a1204; background: linear-gradient(180deg, #fde68a, #f59e0b); }
+
+.bo-podium, .bo-top, .bo-winners { list-style: none; margin: 0; padding: 0; }
+.bo-podium li, .bo-top li { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.bo-podium li.me, .bo-top li.me, .bo-winners li.me { background: rgba(251, 191, 36, 0.08); border-radius: 8px; }
+.bo-pos { flex: none; width: 2.2em; text-align: center; font-weight: 800; color: var(--muted); }
+.bo-who { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+.bo-who em { font-style: normal; font-size: 0.78rem; color: var(--muted); }
+.bo-podium b { white-space: nowrap; }
+
+.bo-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.bo-chip { padding: 1px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; color: #1a1204; background: linear-gradient(180deg, #fde68a, #f59e0b); }
+.bo-chip.none { color: var(--muted); background: rgba(255, 255, 255, 0.08); font-weight: 600; }
+.bo-pts { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.bo-pts b { font-size: 1.05rem; }
+.bo-pts small { font-size: 0.68rem; color: var(--muted); }
+
+.bo-sub-title { margin: 14px 0 6px; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.bo-winners { max-height: 260px; overflow-y: auto; }
+.bo-winners li { display: grid; grid-template-columns: 3em 1fr; column-gap: 8px; padding: 6px 6px; border-top: 1px solid rgba(255, 255, 255, 0.05); align-items: baseline; }
+.bo-winners em { grid-column: 2; font-style: normal; font-size: 0.76rem; color: var(--muted); }
+.bo-season { font-size: 0.78rem; font-weight: 800; color: #fbbf24; }
+
+@media (max-width: 520px) {
+  .bo-hero { gap: 12px; }
+  .bo-winner { font-size: 1.15rem; }
+}

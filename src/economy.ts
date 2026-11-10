@@ -79,7 +79,13 @@ import { PRESTIGE_FADE } from './lifetimeConfig'
 
 export const START_PRESTIGE = 10
 export const PRESTIGE_MIN = 0
-export const PRESTIGE_MAX = 100
+export const PRESTIGE_MAX = 100 // tope de los clubes de la IA. El de tu club no tiene tope: sigue sumando con cada título
+// El prestigio de tu club puede pasar de 100, pero lo que rinde en patrocinios se queda en este tope para no romper la economía.
+// Si quieres que siga subiendo sin límite también el dinero, pon Infinity.
+export const PRESTIGE_SPONSOR_CAP = 100
+export function sponsorPrestige(prestige: number): number {
+  return Math.min(prestige, PRESTIGE_SPONSOR_CAP)
+}
 
 // Cuánto sube o baja el prestigio al cerrar la temporada
 export function prestigeChange(o: {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import './champions.css'
 import type { Club, CrestShape } from './types'
@@ -31,7 +31,7 @@ import {
   clUserMatches,
   clUserPosition,
 } from './champions'
-import { INTRO_H, INTRO_MS, INTRO_W, drawIntro, fieldColors } from './clDraw'
+import { fieldColors } from './clDraw'
 import { QUICK_GOAL_MS, QUICK_SUSPENSE_SECONDS, SPEED, isAnimated } from './clTimeline'
 import MatchPlayer from './MatchPlayer'
 import TrophyImg from './TrophyImg'
@@ -100,49 +100,6 @@ function Top({ stageIndex, out, extra }: { stageIndex: number; out: boolean; ext
       </span>
       <Strip current={stageIndex} out={out} />
       {extra && <span className="cl-count">{extra}</span>}
-    </div>
-  )
-}
-
-/* ---------- Animación de inicio (5 s) ---------- */
-function Intro({ onDone }: { onDone: () => void }) {
-  const cv = useRef<HTMLCanvasElement>(null)
-  const done = useRef(onDone)
-  done.current = onDone
-
-  useEffect(() => {
-    const canvas = cv.current
-    const ctx = canvas?.getContext('2d')
-    if (!canvas || !ctx) return
-    const title = europeInfo('champions').name
-    // Resolución interna fija (por devicePixelRatio); el marco lo escala solo con CSS
-    const dpr = Math.min(2, window.devicePixelRatio || 1)
-    canvas.width = Math.round(INTRO_W * dpr)
-    canvas.height = Math.round(INTRO_H * dpr)
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    let raf = 0
-    let t0 = -1
-    let finished = false
-    const loop = (now: number) => {
-      if (t0 < 0) t0 = now
-      const ms = now - t0
-      drawIntro(ctx, INTRO_W, INTRO_H, ms, title)
-      if (ms >= INTRO_MS) {
-        if (!finished) {
-          finished = true
-          done.current()
-        }
-        return
-      }
-      raf = requestAnimationFrame(loop)
-    }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
-  return (
-    <div className="cl-intro" role="img" aria-label={europeInfo('champions').name}>
-      <canvas ref={cv} className="cl-canvas" />
     </div>
   )
 }
@@ -490,7 +447,10 @@ function Verdict({ v, onFinish }: { v: View; onFinish: () => void }) {
     <div className="cl">
       <Top stageIndex={0} out={path === 'eliminado'} />
       <div className="cl-card cl-verdict">
-        <div className="cl-round">Fin de la fase de liga</div>
+        <div className="cl-trophy">
+          <TrophyImg id="champions" size={110} label={europeInfo('champions').name} />
+        </div>
+        <div className="cl-round">Resultado de la fase de liga</div>
         <div className={'cl-headline ' + (path === 'eliminado' ? 'loss' : 'win')}>
           {path === 'directo' && `¡${pos}.º! Pasas directo a octavos`}
           {path === 'playoff' && `${pos}.º: jugarás el playoff`}
@@ -589,8 +549,9 @@ export default function ChampionsScreen({ club, state, phase, history, onFinish 
     () => clUserMatches(state).filter((m) => (phase === 'liga' ? m.stage === 'liga' : m.stage !== 'liga')),
     [state, phase],
   )
-  // Fase de liga: intro, 8 partidos y veredicto. Eliminatorias: sus partidos y el campeón.
-  const offset = phase === 'liga' ? 1 : 0
+  // Fase de liga (parada de inicio): solo el resultado y la tabla, sin animaciones ni partido a partido.
+  // Eliminatorias: sus partidos y el campeón.
+  const offset = 0
   const total = matches.length + offset + 1
   const [idx, setIdx] = useState(() => Math.min(progress.get(key) ?? 0, total - 1))
 
@@ -602,11 +563,11 @@ export default function ChampionsScreen({ club, state, phase, history, onFinish 
   if (!me || matches.length === 0) return null
   const v: View = { s: state, club, byId: new Map(state.entrants.map((e) => [e.id, e])), me }
 
-  // Solo se avanza con “Continuar”: no hay forma de saltarse la competición
-  if (phase === 'liga' && idx === 0) return <Intro onDone={() => setIdx(1)} />
+  if (phase === 'liga') return <Verdict v={v} onFinish={onFinish} />
+  // Eliminatorias: solo se avanza con “Continuar”
   const n = idx - offset
   if (n >= matches.length) {
-    return phase === 'liga' ? <Verdict v={v} onFinish={onFinish} /> : <Closing v={v} history={history} onFinish={onFinish} />
+    return <Closing v={v} history={history} onFinish={onFinish} />
   }
   const m = matches[n]
   return <MatchView key={m.id} v={v} m={m} index={n} last={n === matches.length - 1} onNext={() => setIdx(idx + 1)} />

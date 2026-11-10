@@ -4,6 +4,9 @@ import type { LeagueState, Level } from './engine'
 import type { StatRow } from './sample'
 import { getClubStats, getTopPlayers } from './season'
 import PageHead from './PageHead'
+import type { GameState } from './game'
+import { BALON } from './balonDeOro'
+import { BalonDeOroHistory } from './BalonDeOroCard'
 
 function RankCard({
   title,
@@ -39,7 +42,7 @@ function RankCard({
   )
 }
 
-export default function Stats({ club, league }: { club: Club; league: LeagueState }) {
+export default function Stats({ club, league, game }: { club: Club; league: LeagueState; game?: GameState }) {
   const [tab, setTab] = useState<Level>(league.userDivision)
   const clubStats = getClubStats(league)
 
@@ -110,8 +113,8 @@ export default function Stats({ club, league }: { club: Club; league: LeagueStat
       </div>
 
       <div className="card">
-        <h2>Premios de la temporada</h2>
-        <p>Los premios se entregan en la parada de Cierre. Los nombres definitivos están pendientes de definir.</p>
+        <h2>{BALON.name}</h2>
+        <BalonDeOroHistory history={game?.history ?? []} clubName={club.name} />
       </div>
     </div>
   )

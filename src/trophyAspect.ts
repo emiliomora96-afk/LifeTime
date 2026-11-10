@@ -1,7 +1,7 @@
 import { activeLeagueId } from './activeLeague'
 // Ids de los trofeos. 'supercup' es la Supercopa Continental (europea);
 // 'liga', 'copa' y 'supercopa' son los de la liga de la partida (mismo id que en domestic.ts).
-export type TrophyId = 'champions' | 'europa' | 'conferencia' | 'supercup' | 'liga' | 'copa' | 'supercopa'
+export type TrophyId = 'champions' | 'europa' | 'conferencia' | 'supercup' | 'liga' | 'copa' | 'supercopa' | 'balon'
 
 // Ancho / alto de cada imagen (todas son más altas que anchas)
 export const TROPHY_ASPECT: Record<TrophyId, number> = {
@@ -12,6 +12,7 @@ export const TROPHY_ASPECT: Record<TrophyId, number> = {
   liga: 0.398,
   copa: 0.654,
   supercopa: 0.701,
+  balon: 0.842, // Lifetime Balón de Oro
 }
 
 // Las ligas nuevas aún no tienen sus trofeos medidos: hasta entonces se usa una proporción media

@@ -27,6 +27,8 @@ import type { MarketOffer } from './market'
 import { clamp, createRng, mixSeed, randomSeed } from './rng'
 import type { MoveNews } from './aiclubs'
 import { PRESTIGE_MAX, PRESTIGE_MIN, START_PRESTIGE, cupPrestigeChange, prestigeChange } from './economy'
+import { balonPrestige, computeBalonDeOro } from './balonDeOro'
+import type { BalonRecord } from './balonDeOro'
 import { playDomesticSeason, userCopaRecord, userSupercopaRecord } from './domestic'
 import type { CupRecord, DomesticSeason } from './domestic'
 import { DEFAULT_LEAGUE, isLeagueId } from './leagues'
@@ -44,6 +46,7 @@ export interface SeasonRecord extends SeasonOutcome {
   euro?: EuroRecord | null // cómo le fue en el torneo europeo que jugó esa temporada (Paso 9)
   copa?: CupRecord | null // cómo le fue en la Copa del Rey esa temporada
   supercopa?: CupRecord | null // Supercopa de España, si la jugó
+  balon?: BalonRecord | null // Lifetime Balón de Oro de esa temporada: el ganador y los mejores (Paso 11)
   strength?: number // nivel del once al cerrar la temporada (Paso 10)
   topScorer?: { name: string; goals: number } | null // goleador del club esa temporada
   bestPlayer?: { name: string; pos: string; rating: number } | null // el mejor jugador del club
@@ -257,6 +260,22 @@ export function saveGame(game: GameState): void {
   }
 }
 
+// Prestigio del Balón de Oro para los clubes de la IA (el de tu club va aparte, en game.prestige)
+function withBalonPrestige(league: LeagueState, awards: { teamId: number; bonus: number }[]): LeagueState {
+  const bonus = new Map<number, number>()
+  for (const a of awards) if (a.teamId !== USER_ID) bonus.set(a.teamId, (bonus.get(a.teamId) ?? 0) + a.bonus)
+  if (bonus.size === 0) return league
+  const divisions = { ...league.divisions }
+  for (const level of [1, 2] as const) {
+    const div = divisions[level]
+    divisions[level] = {
+      ...div,
+      teams: div.teams.map((t) => (bonus.has(t.id) ? { ...t, prestige: clamp((t.prestige ?? 10) + (bonus.get(t.id) ?? 0), PRESTIGE_MIN, PRESTIGE_MAX) } : t)),
+    }
+  }
+  return { ...league, divisions }
+}
+
 // Pasa a la siguiente parada base y simula los partidos del tramo
 function nextBase(game: GameState): GameState {
   const idx = BASE_STOPS.findIndex((s) => s.id === game.baseStop)
@@ -297,21 +316,27 @@ function nextBase(game: GameState): GameState {
     (euro?.champion ? 1 : 0) +
     (copa?.champion ? 1 : 0) +
     (supercopa?.champion ? 1 : 0)
+  // Lifetime Balón de Oro: se calcula con todo lo que pasó esta temporada (liga, copas y Champions)
+  const balon = computeBalonDeOro({ league: game.league, champions: game.champions, domestic: done, season: game.season, seed: game.seed })
+  const balonAwards = balonPrestige(balon)
+  const balonUser = balonAwards.filter((a) => a.teamId === USER_ID).reduce((n, a) => n + a.bonus, 0)
   const closed = updateLegends(game.legends, game.league, game.season, titles)
   const strength = getUserTeam(game.league)?.strength
   const history = [
     ...game.history,
-    { season: game.season, ...outcome, europe: europe.user, euro, copa, supercopa, strength, topScorer: closed.topScorer, bestPlayer: closed.bestPlayer },
+    { season: game.season, ...outcome, europe: europe.user, euro, copa, supercopa, balon, strength, topScorer: closed.topScorer, bestPlayer: closed.bestPlayer },
   ]
-  const prestige = clamp(game.prestige + prestigeChange({ ...outcome, prestige: game.prestige }) + cupPrestigeChange(copa, supercopa), PRESTIGE_MIN, PRESTIGE_MAX)
+  // El prestigio de tu club no tiene tope: cada liga, copa o premio sigue sumando
+  const prestige = Math.max(PRESTIGE_MIN, game.prestige + prestigeChange({ ...outcome, prestige: game.prestige }) + cupPrestigeChange(copa, supercopa) + balonUser)
 
   if (game.season >= TOTAL_SEASONS) {
     return { ...game, history, legends: closed.legends, prestige, finished: true, eventId: null, pending: [], tournament: null, champions: null }
   }
-  const league = finishSeason(game.league, mixSeed(game.seed, game.season, 999), {
+  const closedLeague = finishSeason(game.league, mixSeed(game.seed, game.season, 999), {
     academyBonus: (game.investments.academy - 1) * 2.5,
     leaving: game.leaving,
   })
+  const league = withBalonPrestige(closedLeague, balonAwards)
 
   // La cantera: los juveniles crecen, los que pasan de 19 años se van y llegan otros nuevos
   const rng = createRng(mixSeed(game.seed, game.season, 777))

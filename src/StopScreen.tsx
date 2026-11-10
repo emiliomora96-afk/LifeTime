@@ -22,6 +22,7 @@ import { europeFinalIncome } from './euroIncome'
 import { CupSeasonLines, CupTrophyShow, DomesticSummaryCard, seasonTrophies } from './DomesticCups'
 import TrophyImg from './TrophyImg'
 import NoticePlayer from './NoticePlayer'
+import { BalonDeOroGala } from './BalonDeOroCard'
 import MiniBoard from './MiniBoard'
 import ActionBar from './ActionBar'
 import ErrorBoundary from './ErrorBoundary'
@@ -227,6 +228,12 @@ export default function StopScreen({ club, game, onAnswer, onContinue, onTactic,
       )}
 
       {!event && !game.finished && base.id === 'invierno' && cl && clUser(cl) && <ChampionsWinterCard state={cl} />}
+
+      {event?.id === 'gala' && (
+        <ErrorBoundary name="el Balón de Oro" fallback={null}>
+          <BalonDeOroGala game={game} club={club} />
+        </ErrorBoundary>
+      )}
 
       {euroFinal.length > 0 && (
         <div className="card">
