@@ -27,6 +27,7 @@
   background: #02030a;
 }
 .cl-intro .cl-canvas { border-radius: 0; }
+.cl-intro-wrap { align-items: center; justify-content: center; padding: 12px; }
 
 .cl-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .cl-comp { font-weight: 800; letter-spacing: 0.03em; color: var(--cl-gold); }

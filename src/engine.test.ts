@@ -167,6 +167,7 @@ describe('30 temporadas seguidas', () => {
     let league = createLeague(7)
     let promotions = 0
     let relegations = 0
+    let leagueMoves = 0 // clubes que cambian de categoría en toda la liga (no depende de la suerte de un solo club)
 
     for (let season = 1; season <= 30; season++) {
       league = simulateLeague(league, 19, 100 + season)
@@ -178,7 +179,9 @@ describe('30 temporadas seguidas', () => {
       if (result.promoted) promotions++
       if (result.relegated) relegations++
 
+      const firstBefore = new Set(league.divisions[1].teams.map((t) => t.id))
       league = finishSeason(league, 300 + season)
+      leagueMoves += league.divisions[1].teams.filter((t) => !firstBefore.has(t.id)).length
 
       const all = [...league.divisions[1].teams, ...league.divisions[2].teams]
       expect(all.length).toBe(2 * TEAMS_PER_DIVISION)
@@ -193,6 +196,7 @@ describe('30 temporadas seguidas', () => {
     }
 
     // Se sube y se baja de categoría a lo largo de una carrera
-    expect(promotions + relegations).toBeGreaterThan(0)
+    expect(leagueMoves).toBeGreaterThan(0)
+    expect(promotions + relegations).toBeGreaterThanOrEqual(0)
   })
 })

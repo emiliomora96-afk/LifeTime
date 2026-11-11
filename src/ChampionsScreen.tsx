@@ -35,9 +35,12 @@ import { fieldColors } from './clDraw'
 import { QUICK_GOAL_MS, QUICK_SUSPENSE_SECONDS, SPEED, isAnimated } from './clTimeline'
 import MatchPlayer from './MatchPlayer'
 import TrophyImg from './TrophyImg'
+import ChampionsIntro from './ChampionsIntro'
 
 // El avance dentro de la competición sobrevive a cambiar de sección (se reinicia al recargar la página)
 const progress = new Map<string, number>()
+// La animación de inicio (trofeo, 5 s) sale una sola vez por fase y temporada; sobrevive a cambiar de sección
+const introSeen = new Set<string>()
 
 const SHAPES: CrestShape[] = ['classic', 'round', 'modern']
 function hash(s: string): number {
@@ -554,6 +557,7 @@ export default function ChampionsScreen({ club, state, phase, history, onFinish 
   const offset = 0
   const total = matches.length + offset + 1
   const [idx, setIdx] = useState(() => Math.min(progress.get(key) ?? 0, total - 1))
+  const [intro, setIntro] = useState(() => !introSeen.has(key))
 
   useEffect(() => {
     progress.set(key, idx)
@@ -561,6 +565,19 @@ export default function ChampionsScreen({ club, state, phase, history, onFinish 
   }, [key, idx])
 
   if (!me || matches.length === 0) return null
+  if (intro) {
+    return (
+      <div className="cl cl-intro-wrap">
+        <ChampionsIntro
+          title={europeInfo('champions').name}
+          onDone={() => {
+            introSeen.add(key)
+            setIntro(false)
+          }}
+        />
+      </div>
+    )
+  }
   const v: View = { s: state, club, byId: new Map(state.entrants.map((e) => [e.id, e])), me }
 
   if (phase === 'liga') return <Verdict v={v} onFinish={onFinish} />

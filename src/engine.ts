@@ -35,9 +35,19 @@ const TACTIC_MOD: Record<Tactic, { atk: number; def: number }> = {
   defensiva: { atk: -2, def: 2 },
 }
 
-const SCORE_WEIGHT = { POR: 0.005, DEF: 0.1, MED: 0.3, DEL: 1 }
-// Los goles se concentran en los mejores: un delantero de élite se lleva buena parte de los goles de su equipo
-const SCORE_EXPONENT = 9
+// Cómo se reparten los goles y las asistencias de un equipo entre sus jugadores (todo lo ajustable está aquí).
+// Lo usan la liga, las copas y la Champions; no cambia cuántos goles mete cada equipo, solo quién los marca.
+export const SCORING = {
+  // Peso de cada posición al repartir los goles (los medios marcan más que antes: un mediocampista ofensivo de élite llega a 12-15 goles)
+  weight: { POR: 0.005, DEF: 0.1, MED: 0.5, DEL: 1 } as Record<Position, number>,
+  // Los goles se concentran en los mejores: un delantero de élite se lleva buena parte de los goles de su equipo
+  exponent: 12,
+  // Probabilidad de que un gol tenga asistencia
+  assistChance: 0.8,
+  // Peso de cada posición al repartir las asistencias, y cuánto pesa la valoración
+  assistWeight: { POR: 0.02, DEF: 0.35, MED: 1, DEL: 0.8 } as Record<Position, number>,
+  assistExponent: 2,
+}
 // Cada jugador tiene su "olfato": un rematador nato (hasta +25 %) o uno más discreto (hasta -15 %), fijo según su id
 function finishing(id: string): number {
   let h = 0
@@ -46,9 +56,8 @@ function finishing(id: string): number {
 }
 // Peso de un jugador al repartir los goles de su equipo (lo usan la liga, las copas y las competiciones europeas)
 export function scoringWeight(p: { id: string; pos: Position; rating: number; starter?: boolean }): number {
-  return SCORE_WEIGHT[p.pos] * Math.pow(p.rating / 70, SCORE_EXPONENT) * finishing(p.id) * (p.starter ? 1 : 0.3)
+  return SCORING.weight[p.pos] * Math.pow(p.rating / 70, SCORING.exponent) * finishing(p.id) * (p.starter ? 1 : 0.3)
 }
-const ASSIST_WEIGHT = { POR: 0.02, DEF: 0.35, MED: 1, DEL: 0.7 }
 
 /* ---------- Tipos ---------- */
 export interface SimTeam {
@@ -147,7 +156,8 @@ function shotsFor(lambda: number, goals: number, rng: Rng): number {
   return Math.max(goals, Math.round(lambda * 7 + 1 + normal(rng) * 2))
 }
 
-function goalEvents(team: SimTeam, goals: number, rng: Rng): GoalEvent[] {
+// from/span: minutos en los que caen los goles (por defecto el partido de 90). Las copas lo usan para la prórroga (91-120)
+export function goalEvents(team: SimTeam, goals: number, rng: Rng, from = 1, span = 90): GoalEvent[] {
   const events: GoalEvent[] = []
   for (let i = 0; i < goals; i++) {
     const scorer = pickWeighted(
@@ -157,15 +167,15 @@ function goalEvents(team: SimTeam, goals: number, rng: Rng): GoalEvent[] {
     )
     if (!scorer) continue
     let assist: string | null = null
-    if (rng() < 0.7) {
+    if (rng() < SCORING.assistChance) {
       const helper = pickWeighted(
         team.squad.filter((p) => p.id !== scorer.id),
-        (p) => ASSIST_WEIGHT[p.pos] * Math.pow(p.rating / 70, 2) * (p.starter ? 1 : 0.3),
+        (p) => SCORING.assistWeight[p.pos] * Math.pow(p.rating / 70, SCORING.assistExponent) * (p.starter ? 1 : 0.3),
         rng,
       )
       assist = helper ? helper.id : null
     }
-    events.push({ team: team.id, scorer: scorer.id, assist, minute: 1 + Math.floor(rng() * 90) })
+    events.push({ team: team.id, scorer: scorer.id, assist, minute: from + Math.floor(rng() * span) })
   }
   return events
 }

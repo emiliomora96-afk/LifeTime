@@ -72,6 +72,13 @@ describe('Lifetime Balón de Oro', () => {
     expect(legacyText(CLUB, g, 0)).toContain(BALON.name)
   })
 
+  it('los delanteros y medios que ganan tienen números de ganador (goles y asistencias de liga, copas y Champions)', () => {
+    const ganadores = g.history.flatMap((r) => (r.balon ? [r.balon.top[0]] : []))
+    const ofensivos = ganadores.filter((w) => w.pos === 'DEL' || w.pos === 'MED')
+    expect(ofensivos.length).toBeGreaterThan(0)
+    for (const w of ofensivos) expect(w.goals + w.assists).toBeGreaterThanOrEqual(12)
+  })
+
   it('el prestigio no tiene tope, pero los patrocinios sí', () => {
     expect(sponsorPrestige(250)).toBe(100)
     expect(sponsorPrestige(40)).toBe(40)

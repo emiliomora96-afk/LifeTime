@@ -44,11 +44,9 @@
 /* Trofeo aún sin ganar: se ve completo pero en gris, apagado, hasta que se consiga */
 .vt-ghost .trophy-img { filter: grayscale(1) brightness(0.8) contrast(0.9) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.55)); opacity: 0.5; }
 
-.vt-more {
-  position: absolute; top: 6px; right: 10px; z-index: 10;
-  padding: 2px 9px; border-radius: 999px; font-size: 0.82rem; font-weight: 800;
-  color: #1a1204; background: linear-gradient(180deg, #fde68a, #f59e0b); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
-}
+/* Cada fila de trofeos: la de delante apoyada en la tabla; las de atrás, más arriba y más oscuras */
+.vt-rowbox { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; align-items: flex-end; pointer-events: none; }
+.vt-rowbox[data-back='true'] .trophy-img { filter: brightness(0.78) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 
 /* Placa bajo la repisa */
 .vt-plate { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 10px 12px; text-align: center; }
@@ -56,6 +54,10 @@
 .vt-plate span { font-size: 0.78rem; color: var(--muted); }
 .vt-plate em { font-size: 0.72rem; font-style: normal; color: #94a3b8; }
 .vt-slot[data-won='true'] .vt-plate span { color: #fbbf24; font-weight: 700; }
+/* Cantidad ganada, en grande bajo la repisa */
+.vt-total { display: flex; align-items: baseline; justify-content: center; gap: 6px; margin-top: 2px; line-height: 1; }
+.vt-total b { font-size: 1.9rem; font-weight: 900; color: #fbbf24; text-shadow: 0 0 14px rgba(251, 191, 36, 0.45); font-variant-numeric: tabular-nums; }
+.vt-total small { font-size: 0.8rem; font-weight: 700; color: #fbbf24; opacity: 0.85; }
 
 .vt-extra { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 10px 6px 2px; font-size: 0.82rem; color: var(--muted); }
 .vt-extra strong { color: var(--text); }

@@ -28,14 +28,15 @@ export const BALON = {
 
   // Rendimiento: goles y asistencias (la Champions vale más), vallas invictas para defensas y porteros, y un extra por valoración
   championsMult: 1.5, // un gol o una asistencia en la Champions vale esto frente a uno de liga
+  cupMult: 1, // un gol o una asistencia en la Copa o la Supercopa vale esto frente a uno de liga
   goalWeight: 1,
-  assistWeight: 2.1, // alto a propósito: los goles se concentran en los delanteros y así los medios con muchas asistencias compiten
+  assistWeight: 1.6, // una asistencia vale esto frente a un gol: los medios con muchas asistencias compiten, pero ya no ganan con números flojos
   cleanSheetWeight: { POR: 1.2, DEF: 0.9, MED: 0, DEL: 0 } as Record<Position, number>,
   ratingBase: 78, // por encima de esta valoración empieza a sumar
   ratingWeight: 0.45,
   // Multiplicador por posición sobre el rendimiento. Ajustado con simulaciones para que los ganadores salgan
   // en torno a 45 % delanteros, 45 % medios, 8 % defensas y 2 % porteros. Es muy sensible en defensas y porteros: muévelo de a poco.
-  positionMult: { DEL: 1, MED: 1.22, DEF: 1.22, POR: 1.5 } as Record<Position, number>,
+  positionMult: { DEL: 1, MED: 1.22, DEF: 1.38, POR: 1.6 } as Record<Position, number>,
   // Los números de un jugador de 2.ª división (tu club, si aún no ascendió) valen esta parte
   secondDivisionFactor: 0.5,
 
@@ -60,10 +61,12 @@ export interface BalonEntry {
   titlePts: number // por títulos del club
   rankPts: number // por el ranking de rendimiento
   rank: number // puesto en el ranking de rendimiento
-  goals: number // goles de liga + Champions
+  goals: number // goles de liga + copas + Champions
   assists: number
   clGoals: number // de ellos, en la Champions
   clAssists: number
+  cupGoals?: number // de ellos, en la Copa y la Supercopa (las entradas guardadas antes de este cambio no lo traen)
+  cupAssists?: number
   titles: BalonTitle[]
 }
 
@@ -102,6 +105,8 @@ export interface BalonCand {
   la: number
   clg: number
   cla: number
+  cg: number // goles en la Copa y la Supercopa
+  ca: number
   cs: number // vallas invictas que le tocan
   titles: BalonTitle[] // títulos de su club que cuentan para él (vacío si no jugó lo suficiente)
 }
@@ -125,7 +130,7 @@ function divisionStats(div: DivisionState) {
   return { goals, assists, sheets }
 }
 
-function candidatesOf(league: LeagueState, champions: ClState | null): BalonCand[] {
+function candidatesOf(league: LeagueState, champions: ClState | null, domestic: DomesticSeason | null): BalonCand[] {
   const cands: BalonCand[] = []
   const byId = new Map<string, BalonCand>()
 
@@ -154,6 +159,8 @@ function candidatesOf(league: LeagueState, champions: ClState | null): BalonCand
         la: st.assists.get(p.id) ?? 0,
         clg: 0,
         cla: 0,
+        cg: 0,
+        ca: 0,
         cs: teamSheets * Math.min(1, starts / played),
         titles: [],
       }
@@ -197,6 +204,8 @@ function candidatesOf(league: LeagueState, champions: ClState | null): BalonCand
           la: 0,
           clg: 0,
           cla: 0,
+          cg: 0,
+          ca: 0,
           cs: 0,
           titles: [],
         }
@@ -213,13 +222,25 @@ function candidatesOf(league: LeagueState, champions: ClState | null): BalonCand
       }
     }
   }
+
+  // Copa y Supercopa: goles y asistencias de los jugadores de 1.ª y de tu club (los de clubes de 2.ª o inferiores no compiten por el premio)
+  if (domestic) {
+    for (const tie of [...domestic.copa.ties, ...domestic.supercopa.ties]) {
+      for (const g of tie.goals ?? []) {
+        const scorer = byId.get(g.scorer)
+        if (scorer) scorer.cg++
+        const helper = g.assist ? byId.get(g.assist) : undefined
+        if (helper) helper.ca++
+      }
+    }
+  }
   return cands
 }
 
 // Rendimiento personal de la temporada (antes del multiplicador de posición)
 function performance(c: BalonCand): number {
-  const goals = c.lg * c.factor + c.clg * BALON.championsMult
-  const assists = c.la * c.factor + c.cla * BALON.championsMult
+  const goals = c.lg * c.factor + c.cg * c.factor * BALON.cupMult + c.clg * BALON.championsMult
+  const assists = c.la * c.factor + c.ca * c.factor * BALON.cupMult + c.cla * BALON.championsMult
   const defence = c.cs * c.factor * BALON.cleanSheetWeight[c.pos]
   const rating = Math.max(0, c.rating - BALON.ratingBase) * BALON.ratingWeight
   return goals * BALON.goalWeight + assists * BALON.assistWeight + defence + rating
@@ -229,7 +250,7 @@ function performance(c: BalonCand): number {
 export function balonPool(g: BalonInput): BalonCand[] {
   const cl = g.champions && g.champions.season === g.season ? g.champions : null
   const domestic = g.domestic && g.domestic.season === g.season ? g.domestic : null
-  const cands = candidatesOf(g.league, cl)
+  const cands = candidatesOf(g.league, cl, domestic)
 
   // Quién ganó cada título esta temporada
   const first = g.league.divisions[1]
@@ -274,10 +295,12 @@ export function computeBalonDeOro(g: BalonInput): BalonRecord | null {
       titlePts,
       rankPts,
       rank: i + 1,
-      goals: c.lg + c.clg,
-      assists: c.la + c.cla,
+      goals: c.lg + c.cg + c.clg,
+      assists: c.la + c.ca + c.cla,
       clGoals: c.clg,
       clAssists: c.cla,
+      cupGoals: c.cg,
+      cupAssists: c.ca,
       titles: c.titles,
     }
   })

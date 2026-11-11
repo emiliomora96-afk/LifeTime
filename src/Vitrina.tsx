@@ -11,9 +11,10 @@ import type { TrophyId } from './trophyAspect'
 
 /* ==========================================================================
    Vitrina de trofeos del Palmarés.
-   Cada título ganado añade un trofeo a su repisa. Hasta MAX_SHOWN se ven
-   apilados; a partir de ahí se muestra la etiqueta ×N. Lo que aún no se ganó
-   aparece como una sombra, para que se vea qué falta por conseguir.
+   Cada título ganado añade un trofeo a su repisa y se ven todos: cuantos más hay,
+   más se montan unos sobre otros (como un abanico), hasta llenar el hueco. Debajo
+   va el número grande con la cantidad ganada. Lo que aún no se ganó aparece como
+   una sombra, para que se vea qué falta por conseguir.
    ========================================================================== */
 
 interface Slot {
@@ -30,17 +31,29 @@ interface Shelf {
   slots: Slot[]
 }
 
-const MAX_SHOWN = 5 // trofeos que se dibujan por hueco
 const MAX_WINNERS = 6 // ganadores que se listan bajo un trofeo individual (los más recientes)
 const MAX_HEIGHT = 124 // alto de un trofeo solo
 const ROOM = 250 // ancho disponible por hueco (los trofeos se reducen para caber)
-const OVERLAP = 0.4 // parte del ancho que tapa el trofeo siguiente
+const OVERLAP = 0.4 // parte del ancho que tapa el trofeo siguiente cuando hay pocos
+const SPREAD_FROM = 5 // hasta este número de trofeos en una fila se dibujan enteros; con más se montan unos sobre otros
+const MIN_STEP = 2 // separación mínima (px) entre un trofeo y el siguiente dentro de una fila
+const ROW_MAX = 10 // trofeos por fila: con más, se forma otra fila por detrás, un poco más arriba
+const MAX_ROWS = 4 // filas de profundidad
+const MAX_PIECES = ROW_MAX * MAX_ROWS // tope de trofeos dibujados (con tantos ya se ve el montón completo; el número de abajo es el real)
+const RISE = 11 // cuánto sube cada fila de atrás (px)
 
-// Alto de cada trofeo para que los apilados quepan en el hueco
+// Alto de cada trofeo para que los apilados quepan en el hueco (hasta SPREAD_FROM; con más, el alto ya no baja)
 function trophyHeight(id: TrophyId, shown: number): number {
-  const n = Math.max(1, shown)
+  const n = Math.max(1, Math.min(shown, SPREAD_FROM))
   const widthUnits = aspectOf(id) * (1 + (1 - OVERLAP) * (n - 1))
   return Math.max(48, Math.min(MAX_HEIGHT, Math.floor(ROOM / widthUnits)))
+}
+
+// Separación entre trofeos: la normal con pocos; con muchos se cierra para que todos quepan en el hueco
+function trophyStep(w: number, shown: number): number {
+  const normal = Math.round(w * (1 - OVERLAP))
+  if (shown <= SPREAD_FROM) return normal
+  return Math.max(MIN_STEP, Math.min(normal, (ROOM - w) / (shown - 1)))
 }
 
 function buildShelves(l: Legacy): Shelf[] {
@@ -82,10 +95,14 @@ function titlesText(n: number, unit: [string, string] = ['título', 'títulos'])
 }
 
 function SlotView({ slot }: { slot: Slot }) {
-  const shown = Math.min(slot.count, MAX_SHOWN)
-  const h = trophyHeight(slot.id, shown)
+  const shown = Math.min(slot.count, MAX_PIECES)
+  const rowCount = Math.max(1, Math.min(MAX_ROWS, Math.ceil(shown / ROW_MAX)))
+  const perRow = Math.ceil(shown / rowCount)
+  const h = trophyHeight(slot.id, perRow)
   const w = Math.round(h * aspectOf(slot.id))
-  const step = Math.round(w * (1 - OVERLAP))
+  const step = trophyStep(w, perRow)
+  // Fila 0 = la de delante (la más baja); las demás van detrás, más arriba y algo más oscuras
+  const rows = Array.from({ length: rowCount }, (_, r) => Math.max(0, Math.min(perRow, shown - r * perRow)))
 
   return (
     <div className="vt-slot" data-won={slot.count > 0}>
@@ -95,17 +112,32 @@ function SlotView({ slot }: { slot: Slot }) {
             <TrophyImg id={slot.id} height={MAX_HEIGHT} />
           </span>
         ) : (
-          Array.from({ length: shown }, (_, i) => (
-            <span key={i} className="vt-piece" style={{ marginLeft: i === 0 ? 0 : step - w, zIndex: i + 1 }}>
-              <TrophyImg id={slot.id} height={h} label={i === 0 ? `${slot.name}: ${titlesText(slot.count, slot.unit)}` : ''} />
-            </span>
+          rows.map((n, r) => (
+            <div
+              key={r}
+              className="vt-rowbox"
+              data-back={r > 0}
+              style={{ zIndex: MAX_ROWS - r, transform: `translate(${r % 2 === 1 ? Math.round(step / 2) : 0}px, ${-r * RISE}px)` }}
+            >
+              {Array.from({ length: n }, (_, i) => (
+                <span key={i} className="vt-piece" style={{ marginLeft: i === 0 ? 0 : step - w, zIndex: i + 1 }}>
+                  <TrophyImg id={slot.id} height={h} label={r === 0 && i === 0 ? `${slot.name}: ${titlesText(slot.count, slot.unit)}` : ''} />
+                </span>
+              ))}
+            </div>
           ))
         )}
-        {slot.count > MAX_SHOWN && <span className="vt-more">×{slot.count}</span>}
       </div>
       <div className="vt-plate">
         <strong>{slot.name}</strong>
-        <span>{titlesText(slot.count, slot.unit)}</span>
+        {slot.count > 0 ? (
+          <div className="vt-total" aria-hidden="true">
+            <b>{slot.count}</b>
+            <small>{slot.count === 1 ? (slot.unit ?? ['título', 'títulos'])[0] : (slot.unit ?? ['título', 'títulos'])[1]}</small>
+          </div>
+        ) : (
+          <span>{titlesText(0, slot.unit)}</span>
+        )}
         {slot.note && <em>{slot.note}</em>}
         {slot.winners && slot.winners.length > 0 && (
           <ul className="vt-winners">

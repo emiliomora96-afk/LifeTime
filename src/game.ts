@@ -17,7 +17,7 @@ import {
 import type { LeagueState, SeasonOutcome, Tactic } from './engine'
 import { ageAcademy, generateIntake } from './academy'
 import { buildEuropeFromLeague } from './europe'
-import { clChampionEntrant, clRecord, playChampionsKnockout, playChampionsLeague, userInChampions } from './champions'
+import { clAllMatches, clChampionEntrant, clRecord, playChampionsKnockout, playChampionsLeague, userInChampions } from './champions'
 import type { ClState } from './champions'
 import type { EuropeId, EuropeSeason } from './europe'
 import { euroRecord, playEuropeSeason } from './tournament'
@@ -78,6 +78,8 @@ function updateLegends(
   league: LeagueState,
   season: number,
   titles: number,
+  champions: ClState | null = null,
+  domestic: DomesticSeason | null = null,
 ): { legends: Record<string, Legend>; topScorer: SeasonRecord['topScorer']; bestPlayer: SeasonRecord['bestPlayer'] } {
   const div = league.divisions[league.userDivision]
   const mine = div.teams.find((t) => t.id === USER_ID)
@@ -88,6 +90,25 @@ function updateLegends(
       if (e.team !== USER_ID) continue
       goals.set(e.scorer, (goals.get(e.scorer) ?? 0) + 1)
       if (e.assist) assists.set(e.assist, (assists.get(e.assist) ?? 0) + 1)
+    }
+  }
+  // Los goles y asistencias de las copas y de la Champions también cuentan para tus jugadores (no solo los de liga)
+  const count = (scorer: string, assist: string | null) => {
+    goals.set(scorer, (goals.get(scorer) ?? 0) + 1)
+    if (assist) assists.set(assist, (assists.get(assist) ?? 0) + 1)
+  }
+  if (champions && champions.season === season) {
+    for (const m of clAllMatches(champions)) {
+      for (const g of m.goals) {
+        if ((g.side === 0 ? m.home : m.away) === 'user') count(g.scorer.id, g.assist ? g.assist.id : null)
+      }
+    }
+  }
+  if (domestic && domestic.season === season) {
+    for (const tie of [...domestic.copa.ties, ...domestic.supercopa.ties]) {
+      for (const g of tie.goals ?? []) {
+        if ((g.side === 0 ? tie.home : tie.away) === 'user') count(g.scorer, g.assist)
+      }
     }
   }
   const next = { ...legends }
@@ -320,7 +341,7 @@ function nextBase(game: GameState): GameState {
   const balon = computeBalonDeOro({ league: game.league, champions: game.champions, domestic: done, season: game.season, seed: game.seed })
   const balonAwards = balonPrestige(balon)
   const balonUser = balonAwards.filter((a) => a.teamId === USER_ID).reduce((n, a) => n + a.bonus, 0)
-  const closed = updateLegends(game.legends, game.league, game.season, titles)
+  const closed = updateLegends(game.legends, game.league, game.season, titles, game.champions, done)
   const strength = getUserTeam(game.league)?.strength
   const history = [
     ...game.history,

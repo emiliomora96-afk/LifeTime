@@ -146,3 +146,43 @@ describe('premios y registro del club', () => {
     expect(cupPrestigeChange({ champion: false, reach: 'qf' }, null)).toBe(0)
   })
 })
+
+describe('goleadores de las copas', () => {
+  it('cada gol de un club de 1.ª o 2.ª tiene autor (y asistente distinto) de su propia plantilla, y suman el marcador', () => {
+    const league = finishedLeague(3)
+    const squads = new Map<string, Set<string>>()
+    for (const t of [...league.divisions[1].teams, ...league.divisions[2].teams]) {
+      squads.set(t.id === 0 ? 'user' : `t${t.id}`, new Set(t.squad.map((p) => p.id)))
+    }
+    const ds = playDomesticSeason(league, 99, 1)
+    for (const tie of [...ds.copa.ties, ...ds.supercopa.ties]) {
+      const goals = tie.goals ?? []
+      for (const side of [0, 1] as const) {
+        const club = side === 0 ? tie.home : tie.away
+        const mine = goals.filter((g) => g.side === side)
+        const squad = squads.get(club)
+        if (!squad) {
+          expect(mine).toHaveLength(0) // club de categorías inferiores: sin autores
+          continue
+        }
+        expect(mine).toHaveLength(side === 0 ? tie.hg : tie.ag)
+        for (const g of mine) {
+          expect(squad.has(g.scorer)).toBe(true)
+          if (g.assist) {
+            expect(squad.has(g.assist)).toBe(true)
+            expect(g.assist).not.toBe(g.scorer)
+          }
+        }
+      }
+    }
+  })
+
+  it('añadir goleadores no cambia los resultados de la Copa ni de la Supercopa', () => {
+    const league = finishedLeague(4)
+    const rng = createRng(123)
+    const copa = playCopa(league, rng)
+    const ds = playDomesticSeason(league, 123, 1)
+    expect(ds.copa.ties.map((t) => [t.hg, t.ag, t.winner])).toEqual(copa.ties.map((t) => [t.hg, t.ag, t.winner]))
+    expect(ds.copa.champion).toBe(copa.champion)
+  })
+})

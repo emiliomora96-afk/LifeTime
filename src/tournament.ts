@@ -1,5 +1,5 @@
 import type { LeagueState, MatchStats, SimTeam } from './engine'
-import { buildSchedule, getUserTeam, scoringWeight, simulateMatch } from './engine'
+import { SCORING, buildSchedule, getUserTeam, scoringWeight, simulateMatch } from './engine'
 import type { Entrant, EuropeId, EuropeSeason } from './europe'
 import { EUROPE } from './europe'
 import type { NatId, NatPool } from './nations'
@@ -41,7 +41,6 @@ export const EXTRA_TIME_GOALS = 0.4 // goles esperados por equipo en la prórrog
 export const STRENGTH_SENSITIVITY = 0.045 // mismo peso del nivel que en la liga
 export const PENALTY_BASE = 0.76 // probabilidad de marcar un penal
 export const PENALTY_EDGE = 0.004 // ventaja por cada punto de nivel (muy pequeña: los penales son lotería)
-const ASSIST_WEIGHT: Record<Position, number> = { POR: 0.02, DEF: 0.35, MED: 1, DEL: 0.7 }
 
 /* ---------- Tipos ---------- */
 // Referencia a un jugador, con lo justo para mostrarlo (nombre, posición y valoración)
@@ -241,10 +240,10 @@ export function pickGoal(team: SimTeam, side: 0 | 1, minute: number, rng: Rng): 
   )
   if (!scorer) return null
   let assist: TPlayer | null = null
-  if (rng() < 0.7) {
+  if (rng() < SCORING.assistChance) {
     const helper = pickWeighted(
       team.squad.filter((p) => p.id !== scorer.id),
-      (p) => ASSIST_WEIGHT[p.pos] * Math.pow(p.rating / 70, 2) * (p.starter ? 1 : 0.3),
+      (p) => SCORING.assistWeight[p.pos] * Math.pow(p.rating / 70, SCORING.assistExponent) * (p.starter ? 1 : 0.3),
       rng,
     )
     assist = helper ? toRef(helper) : null

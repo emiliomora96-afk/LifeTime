@@ -690,9 +690,48 @@ function drawGlint(ctx: CanvasRenderingContext2D, x: number, y: number, r: numbe
   ctx.fill()
 }
 
+// Trofeo real (imagen): empieza como silueta oscura y se ilumina con `lit` (0 a 1). `height` es su alto en el lienzo.
+let trophyTint: HTMLCanvasElement | null = null
+function drawTrophyImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement, cx: number, cy: number, height: number, lit: number): void {
+  const aspect = img.naturalWidth / img.naturalHeight
+  const hh = height
+  const ww = hh * aspect
+  const x = cx - ww / 2
+  const y = cy - hh / 2
+  ctx.save()
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  if (lit >= 0.995) {
+    ctx.drawImage(img, x, y, ww, hh)
+  } else {
+    // Capa auxiliar: la imagen oscurecida solo donde hay trofeo (source-atop respeta la transparencia)
+    const tw = 256
+    const th = Math.max(1, Math.round(tw / aspect))
+    if (!trophyTint) trophyTint = document.createElement('canvas')
+    if (trophyTint.width !== tw || trophyTint.height !== th) {
+      trophyTint.width = tw
+      trophyTint.height = th
+    }
+    const tc = trophyTint.getContext('2d')
+    if (tc) {
+      tc.clearRect(0, 0, tw, th)
+      tc.globalCompositeOperation = 'source-over'
+      tc.drawImage(img, 0, 0, tw, th)
+      tc.globalCompositeOperation = 'source-atop'
+      tc.fillStyle = `rgba(5,7,13,${0.94 * (1 - lit)})`
+      tc.fillRect(0, 0, tw, th)
+      tc.globalCompositeOperation = 'source-over'
+      ctx.drawImage(trophyTint, x, y, ww, hh)
+    } else {
+      ctx.drawImage(img, x, y, ww, hh)
+    }
+  }
+  ctx.restore()
+}
+
 // 0-1,5 s: oscuro, focos que se encienden y copa en silueta. 1,5-4 s: zoom lento con destellos.
 // 4-5 s: aparece el nombre con un pulso de luz.
-export function drawIntro(ctx: CanvasRenderingContext2D, w: number, h: number, ms: number, title: string): void {
+export function drawIntro(ctx: CanvasRenderingContext2D, w: number, h: number, ms: number, title: string, trophy?: HTMLImageElement | null): void {
   const t = clamp(ms, 0, INTRO_MS) / 1000
   ctx.clearRect(0, 0, w, h)
   ctx.fillStyle = '#02030a'
@@ -748,7 +787,12 @@ export function drawIntro(ctx: CanvasRenderingContext2D, w: number, h: number, m
     ctx.fillRect(lx - w * 0.06, ly - w * 0.06, w * 0.12, w * 0.12)
   }
 
-  drawCup(ctx, fx, fy, cupSize, lit, t)
+  if (trophy && trophy.complete && trophy.naturalWidth > 0) {
+    // Trofeo de la Lifetime Champions League: misma altura que ocupaba la copa; con el zoom nunca pasa del ancho del marco
+    drawTrophyImage(ctx, trophy, fx, fy, cupSize, lit)
+  } else {
+    drawCup(ctx, fx, fy, cupSize, lit, t)
+  }
 
   // Destellos de luz sobre la copa (durante el zoom)
   const glints: [number, number][] = [
@@ -777,7 +821,7 @@ export function drawIntro(ctx: CanvasRenderingContext2D, w: number, h: number, m
   if (t >= 4) {
     const k = clamp((t - 4) / 0.4, 0, 1)
     const veil = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.6)
-    veil.addColorStop(0, `rgba(2,3,10,${0.7 * k})`)
+    veil.addColorStop(0, `rgba(2,3,10,${0.8 * k})`)
     veil.addColorStop(1, 'rgba(2,3,10,0)')
     ctx.fillStyle = veil
     ctx.fillRect(0, 0, w, h)

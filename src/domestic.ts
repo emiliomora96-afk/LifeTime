@@ -1,7 +1,7 @@
 import type { LeagueState, SimTeam } from './engine'
-import { USER_ID, computeTable } from './engine'
+import { USER_ID, computeTable, goalEvents } from './engine'
 import type { Rng } from './rng'
-import { clamp, createRng, normal, poisson, shuffle } from './rng'
+import { clamp, createRng, mixSeed, normal, poisson, shuffle } from './rng'
 import {
   COPA_GATE,
   COPA_GATE_VS_PRIMERA,
@@ -69,6 +69,14 @@ export interface CupEntrant {
   user?: boolean
 }
 
+// Gol de un partido de copa (solo de clubes de 1.ª y 2.ª, que tienen plantilla; los clubes de categorías inferiores no tienen autores)
+export interface CupGoal {
+  side: 0 | 1 // 0 = local, 1 = visitante
+  scorer: string // id del jugador
+  assist: string | null
+  minute: number
+}
+
 export interface CupTie {
   round: CopaRound
   home: string
@@ -76,6 +84,8 @@ export interface CupTie {
   hg: number // goles del local (incluida la prórroga)
   ag: number
   et?: boolean // hubo prórroga
+  reg?: [number, number] // marcador al final de los 90 minutos (solo si hubo prórroga)
+  goals?: CupGoal[] // quién marcó y quién asistió
   pk?: [number, number] // penaltis: local, visitante
   neutral?: boolean
   winner: string
@@ -152,6 +162,7 @@ export function playTie(home: CupEntrant, away: CupEntrant, round: CopaRound, ne
   if (neutral) tie.neutral = true
 
   if (hg === ag) {
+    tie.reg = [hg, ag]
     hg += poisson(lamHome * EXTRA_TIME_SHARE, rng)
     ag += poisson(lamAway * EXTRA_TIME_SHARE, rng)
     tie.et = true
@@ -352,11 +363,39 @@ function playSupercopaTwo(
   }
 }
 
+/* ---------- Goleadores de las copas ---------- */
+// Reparte los goles de cada partido entre los jugadores de sus plantillas, con las mismas reglas que la liga
+// (los mejores y los delanteros marcan más; los medios asisten más). Usa su propio azar: los resultados no cambian.
+function attachScorers(ties: CupTie[], league: LeagueState, rng: Rng): void {
+  const teams = new Map<string, SimTeam>()
+  for (const t of [...league.divisions[1].teams, ...league.divisions[2].teams]) teams.set(entrantId(t.id), t)
+  for (const tie of ties) {
+    const goals: CupGoal[] = []
+    const sides: [string, number, number | undefined, 0 | 1][] = [
+      [tie.home, tie.hg, tie.reg?.[0], 0],
+      [tie.away, tie.ag, tie.reg?.[1], 1],
+    ]
+    for (const [id, total, reg, side] of sides) {
+      const team = teams.get(id)
+      if (!team) continue // club de categoría inferior: sus goles no tienen autor
+      const regular = reg ?? total
+      const extra = total - regular
+      const events = [...goalEvents(team, regular, rng), ...goalEvents(team, extra, rng, 91, 30)]
+      for (const e of events) goals.push({ side, scorer: e.scorer, assist: e.assist, minute: e.minute })
+    }
+    goals.sort((a, b) => a.minute - b.minute)
+    tie.goals = goals
+  }
+}
+
 /* ---------- Temporada completa ---------- */
 export function playDomesticSeason(league: LeagueState, seed: number, season: number, def: LeagueDef = activeLeague()): DomesticSeason {
   const rng = createRng(seed)
   const copa = playCopa(league, rng, def)
   const supercopa = playSupercopa(league, copa, rng, def)
+  const scorersRng = createRng(mixSeed(seed, season, 6161))
+  attachScorers(copa.ties, league, scorersRng)
+  attachScorers(supercopa.ties, league, scorersRng)
   return { season, copa, supercopa }
 }
 
