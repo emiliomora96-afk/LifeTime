@@ -56,7 +56,6 @@ export default function Standings({ club, league }: { club: Club; league: League
       <PageHead
         icon="📊"
         title="Clasificación"
-        subtitle="Calculada por el motor de simulación. Las zonas de ascenso (3 primeros) y descenso (3 últimos) son provisorias hasta definir las reglas."
       />
 
       <div className="card">

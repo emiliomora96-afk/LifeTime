@@ -1,7 +1,7 @@
 interface Props {
   icon: string
   title: string
-  subtitle: string
+  subtitle?: string
 }
 
 export default function PageHead({ icon, title, subtitle }: Props) {
@@ -10,7 +10,7 @@ export default function PageHead({ icon, title, subtitle }: Props) {
       <h1>
         {icon} {title}
       </h1>
-      <p className="subtitle">{subtitle}</p>
+      {subtitle ? <p className="subtitle">{subtitle}</p> : null}
     </div>
   )
 }

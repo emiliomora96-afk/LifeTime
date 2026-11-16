@@ -48,9 +48,24 @@
 .vt-rowbox { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; align-items: flex-end; pointer-events: none; }
 .vt-rowbox[data-back='true'] .trophy-img { filter: brightness(0.78) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 
-/* Placa bajo la repisa */
-.vt-plate { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 10px 12px; text-align: center; }
-.vt-plate strong { font-size: 0.9rem; }
+/* «Sin ganar»: etiqueta dentro de la vitrina, sobre la copa apagada */
+.vt-badge {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); z-index: 5; white-space: nowrap;
+  padding: 4px 14px; border-radius: 999px; font-size: 0.875rem; font-weight: 700; letter-spacing: 0.02em; color: #cbd5e1;
+  background: rgba(8, 14, 28, 0.78); border: 1px solid rgba(148, 163, 184, 0.38); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.vt-plate[hidden] { display: none; }
+
+/* Nombre del trofeo: arriba, sobre la propia copa */
+.vt-name { padding: 8px 10px 2px; text-align: center; font-size: 0.95rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+.vt-slot[data-won='true'] .vt-name { color: #fde68a; }
+/* Una raya fina separa cada trofeo del anterior, para que no se mezclen los textos */
+@media (max-width: 620px) {
+  .vt-slot:not(:first-child) .vt-name { margin-top: 8px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+}
+
+/* Placa bajo la repisa (cantidad ganada y datos) */
+.vt-plate { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 10px 12px; text-align: center; }
 .vt-plate span { font-size: 0.78rem; color: var(--muted); }
 .vt-plate em { font-size: 0.72rem; font-style: normal; color: #94a3b8; }
 .vt-slot[data-won='true'] .vt-plate span { color: #fbbf24; font-weight: 700; }

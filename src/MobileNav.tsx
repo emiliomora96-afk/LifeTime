@@ -1,5 +1,9 @@
-import type { ReactNode } from 'react'
 import type { SectionId } from './sections'
+import inicioImg from './assets/nav/inicio.webp'
+import plantillaImg from './assets/nav/plantilla.webp'
+import mercadoImg from './assets/nav/mercado.webp'
+import canteraImg from './assets/nav/cantera.webp'
+import competicionesImg from './assets/nav/competiciones.webp'
 
 interface Item {
   id: string
@@ -7,21 +11,15 @@ interface Item {
   go: SectionId
   /** Secciones que dejan este botón marcado */
   match: SectionId[]
-  icon: ReactNode
+  icon: string
 }
 
-const svg = (d: ReactNode) => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {d}
-  </svg>
-)
-
 const ITEMS: Item[] = [
-  { id: 'inicio', label: 'Inicio', go: 'inicio', match: ['inicio'], icon: svg(<><path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></>) },
-  { id: 'plantilla', label: 'Plantilla', go: 'equipo', match: ['equipo'], icon: svg(<><path d="M8 3l-5 3 2 4 3-1v11h8V9l3 1 2-4-5-3a4 4 0 0 1-8 0z" /></>) },
-  { id: 'mercado', label: 'Mercado', go: 'mercado', match: ['mercado'], icon: svg(<><path d="M7 7h13l-3-3" /><path d="M17 17H4l3 3" /></>) },
-  { id: 'cantera', label: 'Cantera', go: 'cantera', match: ['cantera'], icon: svg(<><path d="M12 21v-8" /><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z" /><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z" /></>) },
-  { id: 'competiciones', label: 'Competiciones', go: 'tabla', match: ['tabla', 'calendario'], icon: svg(<><path d="M8 4h8v5a4 4 0 0 1-8 0z" /><path d="M8 6H4v1a4 4 0 0 0 4 4" /><path d="M16 6h4v1a4 4 0 0 1-4 4" /><path d="M12 13v4" /><path d="M8 20h8" /></>) },
+  { id: 'inicio', label: 'Inicio', go: 'inicio', match: ['inicio'], icon: inicioImg },
+  { id: 'plantilla', label: 'Plantilla', go: 'equipo', match: ['equipo'], icon: plantillaImg },
+  { id: 'mercado', label: 'Mercado', go: 'mercado', match: ['mercado'], icon: mercadoImg },
+  { id: 'cantera', label: 'Cantera', go: 'cantera', match: ['cantera'], icon: canteraImg },
+  { id: 'competiciones', label: 'Competiciones', go: 'tabla', match: ['tabla', 'calendario'], icon: competicionesImg },
 ]
 
 interface Props {
@@ -29,7 +27,7 @@ interface Props {
   onSelect: (id: SectionId) => void
 }
 
-// Barra inferior fija (solo móvil): 5 secciones con icono y etiqueta.
+// Barra inferior fija (solo móvil): 5 secciones con icono 3D enmarcado y etiqueta.
 export default function MobileNav({ current, onSelect }: Props) {
   return (
     <nav className="mobile-nav only-mobile" aria-label="Secciones">
@@ -43,8 +41,10 @@ export default function MobileNav({ current, onSelect }: Props) {
             aria-current={active ? 'page' : undefined}
             onClick={() => onSelect(it.go)}
           >
-            {it.icon}
-            <span>{it.label}</span>
+            <span className="mnav-frame" aria-hidden="true">
+              <img className="mnav-icon" src={it.icon} alt="" width={192} height={192} draggable={false} />
+            </span>
+            <span className="mnav-label">{it.label}</span>
           </button>
         )
       })}

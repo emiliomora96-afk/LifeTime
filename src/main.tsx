@@ -5,6 +5,7 @@ import App from './App.tsx'
 import ErrorBoundary from './ErrorBoundary'
 import './mobile.css'
 import './ui.css'
+import './compact.css'
 import { installHaptics } from './haptics'
 import { ensureViewportCover } from './viewport'
 

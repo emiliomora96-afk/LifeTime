@@ -106,11 +106,15 @@ function SlotView({ slot }: { slot: Slot }) {
 
   return (
     <div className="vt-slot" data-won={slot.count > 0}>
+      <div className="vt-name">{slot.name}</div>
       <div className="vt-stage">
         {slot.count === 0 ? (
-          <span className="vt-piece vt-ghost">
-            <TrophyImg id={slot.id} height={MAX_HEIGHT} />
-          </span>
+          <>
+            <span className="vt-piece vt-ghost">
+              <TrophyImg id={slot.id} height={MAX_HEIGHT} />
+            </span>
+            <span className="vt-badge">{titlesText(0, slot.unit)}</span>
+          </>
         ) : (
           rows.map((n, r) => (
             <div
@@ -128,16 +132,13 @@ function SlotView({ slot }: { slot: Slot }) {
           ))
         )}
       </div>
-      <div className="vt-plate">
-        <strong>{slot.name}</strong>
+      <div className="vt-plate" hidden={slot.count === 0 && !slot.note && !(slot.winners && slot.winners.length > 0)}>
         {slot.count > 0 ? (
           <div className="vt-total" aria-hidden="true">
             <b>{slot.count}</b>
             <small>{slot.count === 1 ? (slot.unit ?? ['título', 'títulos'])[0] : (slot.unit ?? ['título', 'títulos'])[1]}</small>
           </div>
-        ) : (
-          <span>{titlesText(0, slot.unit)}</span>
-        )}
+        ) : null}
         {slot.note && <em>{slot.note}</em>}
         {slot.winners && slot.winners.length > 0 && (
           <ul className="vt-winners">
